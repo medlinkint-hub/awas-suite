@@ -61,7 +61,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .sb-link:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.95)}
 .sb-link.on{background:rgba(255,255,255,.08);color:#fff;font-weight:600}
 .sb-link.on::before{content:'';position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:3px;height:65%;background:var(--red);border-radius:0 3px 3px 0;box-shadow:0 0 12px rgba(192,57,43,.6)}
-.sb-ico{font-size:15px;width:22px;text-align:center;flex-shrink:0;opacity:.85}
+.sb-ico{width:18px;height:18px;text-align:center;flex-shrink:0;opacity:.78;display:inline-flex;align-items:center;justify-content:center}
+.sb-ico svg{width:18px;height:18px;stroke-width:1.75}
 .sb-link.on .sb-ico{opacity:1}
 .sb-bdg{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:var(--r-pill);min-width:20px;text-align:center;font-family:var(--mono);box-shadow:0 2px 6px rgba(192,57,43,.4)}
 .sb-foot{padding:14px;border-top:1px solid rgba(255,255,255,.06)}
@@ -409,21 +410,7 @@ tr td{transition:background .1s}
       <div><div class="sb-wordmark">AWAS Suite</div><div class="sb-tagline">Medical Assistance</div></div>
     </div>
   </div>
-  <nav class="sb-nav">
-    <div class="sb-group">Overview</div>
-    <div class="sb-link on" onclick="go('dash')"><span class="sb-ico">◈</span>Dashboard</div>
-    <div class="sb-group">Operations</div>
-    <div class="sb-link" onclick="go('cases')"><span class="sb-ico">🚑</span>Cases<span class="sb-bdg" id="bdg-cases"></span></div>
-    <div class="sb-group">Finance</div>
-    <div class="sb-link" onclick="go('client-inv')"><span class="sb-ico">📄</span>Invoices<span class="sb-bdg" id="bdg-ci"></span></div>
-    <div class="sb-link" onclick="go('prov-inv')"><span class="sb-ico">📥</span>Provider Invoices<span class="sb-bdg" id="bdg-pi"></span></div>
-    <div class="sb-link" onclick="go('reports')"><span class="sb-ico">📊</span>Reports</div>
-    <div class="sb-group">Directory</div>
-    <div class="sb-link" onclick="go('clients')"><span class="sb-ico">👤</span>Clients</div>
-    <div class="sb-link" onclick="go('providers')"><span class="sb-ico">🏥</span>Providers</div>
-    <div class="sb-group">System</div>
-    <div class="sb-link" onclick="go('settings')"><span class="sb-ico">⚙</span>Settings</div>
-  </nav>
+  <nav class="sb-nav" id="sb-nav"></nav>
   <div class="sb-foot">
     <div class="sb-user"><div class="sb-av">A</div><div><div class="sb-uname">AWAS</div><div class="sb-urole">Medical Assistance</div></div></div>
   </div>
@@ -779,7 +766,8 @@ tr td{transition:background .1s}
       <div class="ai-box-title">🤖 AI Invoice Scanner <span class="tag tp" style="font-size:10px">auto-fill</span></div>
       <div class="ai-box-st" id="pi-ai-st">Upload the provider's invoice — AI reads it and fills all fields automatically.</div>
       <div class="upload-zone" id="pi-uz" onclick="document.getElementById('pi-file').click()" ondrop="dropF(event,'pi')" ondragover="dzOn(event)" ondragleave="dzOff(event)">
-        <div class="uz-ico">🧾</div><div class="uz-t">Drop provider invoice here or click to browse</div>
+        <div class="uz-ico" style="color:var(--purple)"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
+        <div class="uz-t">Drop provider invoice here or click to browse</div>
         <div class="uz-s">Hospital bills · Ambulance invoices · Pharmacy receipts · Any supplier PDF or image</div>
       </div>
       <input type="file" id="pi-file" style="display:none" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="selF(event,'pi')">
@@ -951,7 +939,73 @@ tr td{transition:background .1s}
 // ══════════════ CONSTANTS ══════════════
 const SVCS=['Air Ambulance','Ambulance Transfer','Medical Escort','Translation','Fees','Assistance'];
 const SVC_CLS={'Air Ambulance':'sv-air','Ambulance Transfer':'sv-amb','Medical Escort':'sv-esc','Translation':'sv-tr','Fees':'sv-fee','Assistance':'sv-ast'};
-const SVC_ICO={'Air Ambulance':'✈️','Ambulance Transfer':'🚑','Medical Escort':'👨‍⚕️','Translation':'🌐','Fees':'💳','Assistance':'🆘'};
+
+// ══════════════ ICON SYSTEM (Lucide-style line icons) ══════════════
+// Returns inline SVG. Default 14px, currentColor, 1.75 stroke. Pass size for override.
+const _ICON_PATHS={
+  // Service icons
+  'plane-takeoff':'M2 22h20M6.36 17.4 4 17l-2-4 1.1-.55a2 2 0 0 1 1.8 0L7.5 14 9 12.5l-2.5-7.6c-.1-.4 0-.8.3-1.1l.7-.7c.4-.4 1-.4 1.4 0L14 9l4.4-.4c1.3-.1 2.6 1.1 2.6 2.4 0 .5-.2 1-.5 1.3l-12 8.4c-.4.3-.8.3-1.2.2L2 19.7'.replace(/\.([\d])/g,'.$1'),
+  'ambulance':'M10 10H6M8 8v4M19 17h2v-3.34a4 4 0 0 0-1.17-2.83L17 8h-7v9M9 17h7M14 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0M3 17V6a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v11',
+  'stethoscope':'M11 2v2M5 2v2M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1M8 15a6 6 0 0 0 12 0v-3M20 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+  'languages':'m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6',
+  'receipt-euro':'M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1L4 2zM14 8H8.5a2.5 2.5 0 0 0 0 5H10M8 11h4M14 15H8.5a2.5 2.5 0 0 1 0-5',
+  'life-buoy':'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM8.46 8.46l-3.54-3.54M15.54 8.46l3.54-3.54M15.54 15.54l3.54 3.54M8.46 15.54l-3.54 3.54M12 7a5 5 0 1 1-5 5 5 5 0 0 1 5-5z',
+  // Sidebar nav icons
+  'gauge':'M12 14V2M12 14a4 4 0 1 0 4 4M22 12a10 10 0 1 1-10-10',
+  'briefcase-medical':'M12 11v4M14 13h-4M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M4 6h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z',
+  'file-text':'M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2zM14 2v6h6M16 13H8M16 17H8M10 9H8',
+  'inbox':'M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z',
+  'bar-chart':'M3 3v18h18M7 16V8M12 16v-5M17 16v-9',
+  'user':'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
+  'hospital':'M12 6v4M14 14h-4M14 18h-4M14 8h-4M18 12h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2M18 22V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v18M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2',
+  'settings':'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.08a2 2 0 0 1 1 1.73v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.73v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2zM12 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6z',
+  // Misc UI
+  'check':'M20 6 9 17l-5-5',
+  'plus':'M5 12h14M12 5v14',
+  'x':'M18 6 6 18M6 6l12 12',
+  'edit':'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z',
+  'trash':'M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6',
+  'printer':'M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z',
+  'mail':'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6',
+  'copy':'M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zM5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1',
+  'search':'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35',
+  'download':'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
+  'arrow-right':'M5 12h14M12 5l7 7-7 7',
+  'chevron-down':'m6 9 6 6 6-6',
+  'pin':'M12 13v8M5 8a7 7 0 1 1 14 0c0 5-7 12-7 12S5 13 5 8zM12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+  'globe':'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
+  'phone':'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z',
+  'circle-check':'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3'
+};
+const ICON_KEY={'Air Ambulance':'plane-takeoff','Ambulance Transfer':'ambulance','Medical Escort':'stethoscope','Translation':'languages','Fees':'receipt-euro','Assistance':'life-buoy'};
+function icon(name,size=14,strokeWidth=1.75){
+  const path=_ICON_PATHS[name];
+  if(!path)return'';
+  return`<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;display:inline-block"><path d="${path}"/></svg>`;
+}
+const SVC_ICO={'Air Ambulance':'✈️','Ambulance Transfer':'🚑','Medical Escort':'👨‍⚕️','Translation':'🌐','Fees':'💳','Assistance':'🆘'}; // legacy fallback for PDF
+
+// Sidebar nav structure
+const NAV_GROUPS=[
+  {label:'Overview',items:[{page:'dash',ico:'gauge',label:'Dashboard'}]},
+  {label:'Operations',items:[{page:'cases',ico:'briefcase-medical',label:'Cases',badge:'bdg-cases'}]},
+  {label:'Finance',items:[
+    {page:'client-inv',ico:'file-text',label:'Invoices',badge:'bdg-ci'},
+    {page:'prov-inv',ico:'inbox',label:'Provider Invoices',badge:'bdg-pi'},
+    {page:'reports',ico:'bar-chart',label:'Reports'}
+  ]},
+  {label:'Directory',items:[
+    {page:'clients',ico:'user',label:'Clients'},
+    {page:'providers',ico:'hospital',label:'Providers'}
+  ]},
+  {label:'System',items:[{page:'settings',ico:'settings',label:'Settings'}]}
+];
+function buildSidebarNav(){
+  const el=document.getElementById('sb-nav');if(!el)return;
+  el.innerHTML=NAV_GROUPS.map(g=>`<div class="sb-group">${g.label}</div>`+
+    g.items.map(it=>`<div class="sb-link${it.page==='dash'?' on':''}" onclick="go('${it.page}')"><span class="sb-ico">${icon(it.ico,18)}</span>${it.label}${it.badge?`<span class="sb-bdg" id="${it.badge}"></span>`:''}</div>`).join('')
+  ).join('');
+}
 const CASE_STS=['New','In Progress','Pending','Completed','Closed'];
 const ST_COL={New:'#1F3D8C','In Progress':'#0E7C66',Pending:'#8A5A1C',Completed:'#0B6F58',Closed:'#6E7383'};
 
@@ -1148,7 +1202,7 @@ function caseTots(cid){
   const paidOut=DB.pInvoices.filter(i=>i.caseId===cid&&i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
   return{sub,vatA,billed,collected,cost,paidOut,outstanding:billed-collected,margin:collected-paidOut};
 }
-const sTag=t=>`<span class="tag ${SVC_CLS[t]||'tx'}">${SVC_ICO[t]||''} ${t}</span>`;
+const sTag=t=>`<span class="tag ${SVC_CLS[t]||'tx'}" style="display:inline-flex;align-items:center;gap:5px">${icon(ICON_KEY[t]||'',12)} ${t}</span>`;
 const stTag=s=>{const m={New:'tn','In Progress':'tb',Pending:'ta',Completed:'tg',Closed:'tx',Draft:'tx',Sent:'tb',Paid:'tg',Overdue:'tr',Disputed:'tr'};return`<span class="tag ${m[s]||'tx'}">${s}</span>`};
 const payTag=(s,d)=>s==='Paid'?`<span class="tag tg">✓ Paid${d?' · '+d:''}</span>`:s==='Overdue'?`<span class="tag tr">⚠ Overdue</span>`:s==='Sent'?`<span class="tag tb">Sent · Awaiting</span>`:`<span class="tag tx">Draft</span>`;
 const expTag=(s,d)=>s==='Paid'?`<span class="tag tg">✓ Paid${d?' · '+d:''}</span>`:s==='Disputed'?`<span class="tag tr">⚠ Disputed</span>`:`<span class="tag ta">⏳ Pending</span>`;
@@ -1365,7 +1419,7 @@ function renderDash(){
     {lbl:'Active Cases',val:ac,sub:`${DB.cases.filter(c=>c.status==='New').length} new · ${DB.cases.length} total`,ac:'var(--navy)',trend:trendChipCount(casesThis,casesLast)},
   ].map(k=>`<div class="kpi"><div class="kpi-accent" style="background:${k.ac}"></div><div class="kpi-lbl">${k.lbl}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div>${k.trend||''}</div>`).join('');
 
-  // CHART — use real monthly data from cInvoices (with legend + tooltip)
+  // CHART — line chart with smoothing, revenue area-fill, custom hover tooltip
   const months=[];const rev=[];const exp=[];
   for(let i=5;i>=0;i--){
     const d=new Date();d.setMonth(d.getMonth()-i);
@@ -1374,27 +1428,57 @@ function renderDash(){
     rev.push(DB.cInvoices.filter(inv=>inv.status==='Paid'&&inv.paid&&inv.paid.startsWith(m)).reduce((a,inv)=>a+(inv.total||0),0));
     exp.push(DB.pInvoices.filter(inv=>inv.status==='Paid'&&inv.paid&&inv.paid.startsWith(m)).reduce((a,inv)=>a+(inv.amount||0),0));
   }
+  const W=520,H=160,PL=8,PR=8,PT=14,PB=26;
   const maxV=Math.max(...rev,...exp,1)*1.15;
-  const chartEl=document.getElementById('d-chart');
-  chartEl.innerHTML=`
+  const sx=i=>PL+(i*(W-PL-PR))/(months.length-1||1);
+  const sy=v=>H-PB-(v/maxV)*(H-PT-PB);
+  // Build smooth cubic Bezier path
+  const smoothPath=(data)=>{
+    let d=`M${sx(0)} ${sy(data[0])}`;
+    for(let i=0;i<data.length-1;i++){
+      const x0=sx(i),y0=sy(data[i]),x1=sx(i+1),y1=sy(data[i+1]);
+      const cx=(x0+x1)/2;
+      d+=` C${cx} ${y0}, ${cx} ${y1}, ${x1} ${y1}`;
+    }
+    return d;
+  };
+  const revPath=smoothPath(rev);
+  const expPath=smoothPath(exp);
+  const areaPath=revPath+` L${sx(rev.length-1)} ${H-PB} L${sx(0)} ${H-PB} Z`;
+  // Grid lines (3 horizontal)
+  const gridLines=[0,.5,1].map(t=>{const y=PT+t*(H-PT-PB);return `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="${t===1?'var(--border2)':'var(--border)'}" stroke-width="1" stroke-dasharray="${t===1?'0':'2 4'}"/>`}).join('');
+  // Month labels
+  const xLabels=months.map((m,i)=>`<text x="${sx(i)}" y="${H-8}" text-anchor="middle" fill="var(--muted)" font-family="Inter,sans-serif" font-size="10" font-weight="500" letter-spacing=".05em">${m.lbl}</text>`).join('');
+  // Hover points
+  const points=months.map((m,i)=>{
+    const net=rev[i]-exp[i];
+    const tt=`${m.lbl}|${fmt(rev[i])}|${fmt(exp[i])}|${fmt(net)}|${net>=0?1:0}`;
+    return `<g class="chart-pt" data-tt="${tt}" data-x="${sx(i)}" onmousemove="chartLineTT(event,this)" onmouseleave="chartTTOff()">
+      <rect x="${sx(i)-22}" y="${PT}" width="44" height="${H-PT-PB}" fill="transparent" pointer-events="all"/>
+      <circle cx="${sx(i)}" cy="${sy(exp[i])}" r="4" fill="#fff" stroke="var(--red)" stroke-width="2"/>
+      <circle cx="${sx(i)}" cy="${sy(rev[i])}" r="4.5" fill="var(--ink)" stroke="#fff" stroke-width="2"/>
+    </g>`;
+  }).join('');
+  document.getElementById('d-chart').innerHTML=`
     <div class="chart-legend">
       <span><span class="chart-legend-dot" style="background:var(--ink)"></span>Collected (Revenue)</span>
-      <span><span class="chart-legend-dot" style="background:var(--red);opacity:.7"></span>Paid to Providers</span>
+      <span><span class="chart-legend-dot" style="background:var(--red)"></span>Paid to Providers</span>
     </div>
-    <div class="chart-wrap" style="height:140px">
-      <div style="display:flex;gap:8px;align-items:flex-end;height:100%;padding-bottom:22px">
-        ${months.map((m,i)=>{
-          const net=rev[i]-exp[i];
-          const tt=`${m.lbl} · Rev ${fmt(rev[i])} · Cost ${fmt(exp[i])} · Net ${fmt(net)}`;
-          return `<div class="chart-bar-group" data-tt="${tt}" data-rev="${fmt(rev[i])}" data-exp="${fmt(exp[i])}" data-net="${fmt(net)}" data-net-pos="${net>=0?1:0}" data-lbl="${m.lbl}" onmousemove="chartTT(event,this)" onmouseleave="chartTTOff()">
-            <div class="bar-stack" style="height:100%">
-              <div class="chart-bar chart-bar-rev" style="height:${(rev[i]/maxV*100).toFixed(1)}%;${rev[i]>0?'min-height:3px':'min-height:0'}"></div>
-              <div class="chart-bar chart-bar-exp" style="height:${(exp[i]/maxV*100).toFixed(1)}%;${exp[i]>0?'min-height:3px':'min-height:0'}"></div>
-            </div>
-            <div class="chart-month-lbl">${m.lbl}</div>
-          </div>`;
-        }).join('')}
-      </div>
+    <div class="chart-wrap" style="height:${H}px;position:relative">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible">
+        <defs>
+          <linearGradient id="rev-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#0B2447" stop-opacity=".18"/>
+            <stop offset="100%" stop-color="#0B2447" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${gridLines}
+        <path d="${areaPath}" fill="url(#rev-grad)" stroke="none"/>
+        <path d="${expPath}" fill="none" stroke="#C0392B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0"/>
+        <path d="${revPath}" fill="none" stroke="#0B2447" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        ${points}
+        ${xLabels}
+      </svg>
       <div id="chart-tt" class="chart-tooltip"></div>
     </div>`;
 
@@ -1453,17 +1537,23 @@ function renderDash(){
 }
 
 // ══════════════ CHART TOOLTIP ══════════════
-function chartTT(e,el){
+function chartLineTT(e,el){
   const tt=document.getElementById('chart-tt');if(!tt)return;
   const wrap=el.closest('.chart-wrap');if(!wrap)return;
   const r=wrap.getBoundingClientRect();
-  const x=e.clientX-r.left,y=e.clientY-r.top;
-  const netPos=el.dataset.netPos==='1';
-  tt.innerHTML=`<div>${el.dataset.lbl}</div>
-    <div class="tt-rev">▌ Revenue · ${el.dataset.rev}</div>
-    <div class="tt-exp">▌ Costs · ${el.dataset.exp}</div>
-    <div class="tt-net" style="color:${netPos?'#a7f3d0':'#fca5a5'}">Net · ${el.dataset.net}</div>`;
-  tt.style.left=x+'px';tt.style.top=(y-8)+'px';tt.classList.add('on');
+  const [lbl,rev,exp,net,netPosStr]=(el.dataset.tt||'').split('|');
+  const netPos=netPosStr==='1';
+  tt.innerHTML=`<div>${lbl}</div>
+    <div class="tt-rev">▌ Revenue · ${rev}</div>
+    <div class="tt-exp">▌ Costs · ${exp}</div>
+    <div class="tt-net" style="color:${netPos?'#a7f3d0':'#fca5a5'}">Net · ${net}</div>`;
+  // Position at the data point's x, near top of chart
+  const svgX=parseFloat(el.dataset.x);
+  const svgEl=wrap.querySelector('svg');
+  const sR=svgEl.getBoundingClientRect();
+  const ratio=sR.width/520;
+  const x=svgX*ratio;
+  tt.style.left=x+'px';tt.style.top='14px';tt.classList.add('on');
 }
 function chartTTOff(){const tt=document.getElementById('chart-tt');if(tt)tt.classList.remove('on')}
 
@@ -2438,7 +2528,7 @@ function showLogoPreview(src){
 function clearLogo(){DB.settings.logo='';save();showLogoPreview('');toast('Logo removed','warn')}
 function exportData(){const b=new Blob([JSON.stringify({DB,FS},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='awas_'+today()+'.json';a.click();toast('Exported')}
 
-// ══════════════ PDF INVOICE GENERATOR ══════════════
+// ══════════════ PDF INVOICE GENERATOR — premium fintech ══════════════
 function openPDFInvoice(ciId){
   _currentInvId=ciId;
   const inv=DB.cInvoices.find(x=>x.id===ciId);if(!inv)return;
@@ -2450,125 +2540,170 @@ function openPDFInvoice(ciId){
   const vatPct=c.vat||0;
   const vatAmt=sub*vatPct/100;
   const total=sub+vatAmt;
-  const logoHTML=S.logo?`<img src="${S.logo}" style="max-height:70px;max-width:140px;object-fit:contain">`:
-    `<div style="font-size:22px;font-weight:900;letter-spacing:-1px;color:#1a1a1a">${S.company||'AWAS'}</div>`;
+  const balance=inv.status==='Paid'?0:total;
+  const logoHTML=S.logo?`<img src="${S.logo}" style="max-height:60px;max-width:160px;object-fit:contain">`:
+    `<div style="font-family:'Fraunces',Georgia,serif;font-size:24px;font-weight:600;letter-spacing:-.02em;color:#0B2447">${S.company||'AWAS'}</div>`;
+  // Status pill style
+  const statusColor=inv.status==='Paid'?'#0E7C66':inv.status==='Overdue'?'#C0392B':inv.status==='Sent'?'#1F3D8C':'#6E7383';
+  const statusBg=inv.status==='Paid'?'#E4F2EC':inv.status==='Overdue'?'#FAE9E6':inv.status==='Sent'?'#EEF2FA':'#F1EFE7';
 
   const html=`
-  <div style="font-family:'Arial',sans-serif;font-size:12px;color:#1a1a1a;max-width:700px;margin:0 auto;padding:0">
+  <div style="font-family:'Inter',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.55;color:#0B2447;max-width:720px;margin:0 auto;padding:0;letter-spacing:-.005em;background:#fff">
 
-    <!-- HEADER -->
-    <div style="text-align:center;margin-bottom:28px">
-      <div style="font-size:28px;font-weight:900;letter-spacing:3px;color:#1a1a1a;margin-bottom:6px">INVOICE</div>
-    </div>
+    <!-- TOP RULE -->
+    <div style="height:4px;background:linear-gradient(90deg,#0B2447 0%,#0B2447 70%,#C0392B 70%,#C0392B 100%);margin-bottom:34px;border-radius:2px"></div>
 
-    <!-- TOP SECTION: Logo + Company LEFT | Invoice Details RIGHT -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">
-      <!-- LEFT: Logo + Company Info -->
-      <div style="flex:1;max-width:55%">
-        <div style="margin-bottom:10px">${logoHTML}</div>
-        <div style="font-weight:700;font-size:13px;margin-bottom:3px">${S.company||'AWAS. LTD'}</div>
-        ${S.vatNo?`<div style="margin-bottom:2px">VAT No: ${S.vatNo}</div>`:''}
-        ${S.desc?`<div style="margin-bottom:4px;color:#444;font-size:11.5px">${S.desc}</div>`:''}
-        ${S.addr1?`<div>${S.addr1}</div>`:''}
-        ${S.addr2?`<div>${S.addr2}</div>`:''}
-        ${S.country?`<div style="margin-bottom:4px">${S.country}</div>`:''}
-        ${S.email?`<div>${S.email}</div>`:''}
-        ${S.email2?`<div>${S.email2}</div>`:''}
-        ${S.website?`<div>${S.website}</div>`:''}
+    <!-- HEADER GRID -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:36px;margin-bottom:38px">
+      <div style="flex:1;min-width:0">
+        <div style="margin-bottom:18px">${logoHTML}</div>
+        <div style="font-weight:600;font-size:13px;color:#0B2447;margin-bottom:6px;letter-spacing:-.012em">${S.company||'AWAS. LTD'}</div>
+        ${S.desc?`<div style="margin-bottom:8px;color:#3A4A6B;font-size:11px;line-height:1.5;max-width:300px">${S.desc}</div>`:''}
+        <div style="font-size:11.5px;color:#3A4A6B;line-height:1.7">
+          ${S.addr1?`<div>${S.addr1}</div>`:''}
+          ${S.addr2?`<div>${S.addr2}${S.country?', '+S.country:''}</div>`:''}
+          ${!S.addr2&&S.country?`<div>${S.country}</div>`:''}
+          ${S.email||S.email2?`<div style="margin-top:4px">${[S.email,S.email2].filter(Boolean).join(' · ')}</div>`:''}
+          ${S.phone?`<div>${S.phone}</div>`:''}
+          ${S.website?`<div style="color:#1F3D8C">${S.website}</div>`:''}
+          ${S.vatNo?`<div style="margin-top:4px;font-family:'JetBrains Mono',SFMono-Regular,Menlo,monospace;font-size:10.5px;color:#6E7383;letter-spacing:.02em">VAT · ${S.vatNo}</div>`:''}
+        </div>
       </div>
-      <!-- RIGHT: Invoice Meta -->
-      <div style="text-align:right">
-        <table style="margin-left:auto;border-collapse:collapse">
-          <tr><td style="padding:2px 8px 2px 0;color:#555">Date :</td><td style="padding:2px 0;font-weight:600">${inv.date}</td></tr>
-          <tr><td style="padding:2px 8px 2px 0;color:#555">Invoice No.:</td><td style="padding:2px 0;font-weight:600">${inv.num}</td></tr>
-          ${c.extref?`<tr><td style="padding:2px 8px 2px 0;color:#555">Ref.No:</td><td style="padding:2px 0;font-weight:600">${c.extref}</td></tr>`:''}
-        </table>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:'Fraunces',Georgia,serif;font-size:38px;font-weight:500;letter-spacing:-.03em;color:#0B2447;line-height:1;margin-bottom:14px">Invoice</div>
+        <div style="display:inline-flex;flex-direction:column;gap:4px;align-items:flex-end">
+          <div style="font-family:'JetBrains Mono',SFMono-Regular,Menlo,monospace;font-size:13px;font-weight:600;color:#0B2447;letter-spacing:.01em">${inv.num}</div>
+          <div style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:${statusBg};color:${statusColor};font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em">${inv.status}</div>
+        </div>
+        <div style="margin-top:18px;font-size:11px;color:#6E7383;letter-spacing:.05em;text-transform:uppercase;font-weight:600">Issued</div>
+        <div style="font-size:12.5px;color:#0B2447;font-weight:500">${inv.date}</div>
+        <div style="margin-top:8px;font-size:11px;color:#6E7383;letter-spacing:.05em;text-transform:uppercase;font-weight:600">Due</div>
+        <div style="font-size:12.5px;color:${inv.status==='Overdue'?'#C0392B':'#0B2447'};font-weight:500">${inv.due||'—'}</div>
+        ${c.extref?`<div style="margin-top:8px;font-size:11px;color:#6E7383;letter-spacing:.05em;text-transform:uppercase;font-weight:600">Reference</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#0B2447;font-weight:500">${c.extref}</div>`:''}
       </div>
     </div>
 
-    <!-- BILL TO -->
-    <div style="margin-bottom:22px">
-      <div style="font-weight:700;margin-bottom:5px">Bill To:</div>
-      <div style="font-weight:700">${client.name||''}</div>
-      ${client.name?`<div>${client.name}</div>`:''}
-      ${client.taxId?`<div>Id.No: ${client.taxId}</div>`:''}
-      ${client.address?`<div>${client.address}</div>`:''}
-      ${client.country?`<div>${client.country}${client.city?', '+client.city:''}</div>`:''}
+    <!-- HAIRLINE DIVIDER -->
+    <div style="height:1px;background:#ECE6D9;margin-bottom:28px"></div>
+
+    <!-- BILL TO + AMOUNT DUE -->
+    <div style="display:flex;justify-content:space-between;gap:36px;margin-bottom:36px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10.5px;font-weight:600;color:#6E7383;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">Billed to</div>
+        <div style="font-family:'Fraunces',Georgia,serif;font-size:18px;font-weight:500;color:#0B2447;margin-bottom:6px;letter-spacing:-.018em">${client.name||''}</div>
+        <div style="font-size:11.5px;color:#3A4A6B;line-height:1.7">
+          ${client.taxId?`<div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6E7383;letter-spacing:.02em">VAT/ID · ${client.taxId}</div>`:''}
+          ${client.address?`<div>${client.address}</div>`:''}
+          ${client.city||client.country?`<div>${[client.city,client.country].filter(Boolean).join(', ')}</div>`:''}
+          ${client.email?`<div style="color:#1F3D8C">${client.email}</div>`:''}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;min-width:180px">
+        <div style="font-size:10.5px;font-weight:600;color:#6E7383;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">Amount due</div>
+        <div style="font-family:'Fraunces',Georgia,serif;font-size:32px;font-weight:500;color:${balance>0?'#0B2447':'#0E7C66'};letter-spacing:-.028em;line-height:1;font-feature-settings:'tnum'">${fmtInv(balance,cur)}</div>
+        ${balance===0&&inv.status==='Paid'?`<div style="margin-top:8px;font-size:11px;color:#0E7C66;font-weight:600;letter-spacing:.04em">✓ PAID${inv.paid?' · '+inv.paid:''}</div>`:''}
+      </div>
     </div>
 
-    <!-- LINE ITEMS TABLE -->
-    <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+    <!-- LINE ITEMS — clean ruled rows, no heavy borders -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:8px">
       <thead>
-        <tr style="background:#f5f5f5">
-          <th style="border:1px solid #ddd;padding:8px 10px;text-align:left;font-size:11.5px">Ref No :</th>
-          <th style="border:1px solid #ddd;padding:8px 10px;text-align:left;font-size:11.5px">Description</th>
-          <th style="border:1px solid #ddd;padding:8px 10px;text-align:right;font-size:11.5px">Unit Price</th>
-          <th style="border:1px solid #ddd;padding:8px 10px;text-align:right;font-size:11.5px">VAT</th>
-          <th style="border:1px solid #ddd;padding:8px 10px;text-align:right;font-size:11.5px">TAX %</th>
-          <th style="border:1px solid #ddd;padding:8px 10px;text-align:right;font-size:11.5px">Total</th>
+        <tr>
+          <th style="padding:10px 0;text-align:left;font-size:10px;font-weight:600;color:#6E7383;letter-spacing:.12em;text-transform:uppercase;border-bottom:1.5px solid #0B2447">Description</th>
+          <th style="padding:10px 14px 10px 0;text-align:right;font-size:10px;font-weight:600;color:#6E7383;letter-spacing:.12em;text-transform:uppercase;border-bottom:1.5px solid #0B2447;width:90px">Qty</th>
+          <th style="padding:10px 14px 10px 0;text-align:right;font-size:10px;font-weight:600;color:#6E7383;letter-spacing:.12em;text-transform:uppercase;border-bottom:1.5px solid #0B2447;width:120px">Unit Price</th>
+          ${vatPct?`<th style="padding:10px 14px 10px 0;text-align:right;font-size:10px;font-weight:600;color:#6E7383;letter-spacing:.12em;text-transform:uppercase;border-bottom:1.5px solid #0B2447;width:90px">VAT ${vatPct}%</th>`:''}
+          <th style="padding:10px 0;text-align:right;font-size:10px;font-weight:600;color:#6E7383;letter-spacing:.12em;text-transform:uppercase;border-bottom:1.5px solid #0B2447;width:120px">Amount</th>
         </tr>
       </thead>
       <tbody>
-        ${c.services.map((s,i)=>{
+        ${c.services.map((s)=>{
           const lineVat=s.amount*vatPct/100;
           return`<tr>
-            <td style="border:1px solid #ddd;padding:8px 10px">${c.extref||c.ref||''}</td>
-            <td style="border:1px solid #ddd;padding:8px 10px">${s.desc||s.type}</td>
-            <td style="border:1px solid #ddd;padding:8px 10px;text-align:right">${fmtInv(s.amount,cur)}</td>
-            <td style="border:1px solid #ddd;padding:8px 10px;text-align:right">${fmtInv(lineVat,cur)}</td>
-            <td style="border:1px solid #ddd;padding:8px 10px;text-align:right">${vatPct}%</td>
-            <td style="border:1px solid #ddd;padding:8px 10px;text-align:right;font-weight:600">${fmtInv(s.amount+lineVat,cur)}</td>
+            <td style="padding:16px 14px 16px 0;border-bottom:1px solid #ECE6D9;vertical-align:top">
+              <div style="font-weight:600;color:#0B2447;font-size:13px;letter-spacing:-.012em;margin-bottom:3px">${s.type}</div>
+              ${s.desc?`<div style="color:#3A4A6B;font-size:11.5px;line-height:1.5">${s.desc}</div>`:''}
+              ${c.patient||c.origin||c.dest?`<div style="color:#6E7383;font-size:10.5px;margin-top:4px;font-style:italic">${[c.patient?'Patient: '+c.patient:'',c.origin&&c.dest?c.origin+' → '+c.dest:c.origin||c.dest||''].filter(Boolean).join(' · ')}</div>`:''}
+            </td>
+            <td style="padding:16px 14px 16px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:#3A4A6B;border-bottom:1px solid #ECE6D9;vertical-align:top">${s.qty}</td>
+            <td style="padding:16px 14px 16px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:#3A4A6B;border-bottom:1px solid #ECE6D9;vertical-align:top">${fmtInv(s.rate||0,cur)}</td>
+            ${vatPct?`<td style="padding:16px 14px 16px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:#3A4A6B;border-bottom:1px solid #ECE6D9;vertical-align:top">${fmtInv(lineVat,cur)}</td>`:''}
+            <td style="padding:16px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:#0B2447;border-bottom:1px solid #ECE6D9;vertical-align:top">${fmtInv(s.amount+lineVat,cur)}</td>
           </tr>`;
         }).join('')}
       </tbody>
     </table>
 
-    <!-- TOTALS -->
-    <div style="display:flex;justify-content:flex-end;margin-bottom:24px">
-      <table style="min-width:220px;border-collapse:collapse">
-        ${vatPct?`<tr><td style="padding:4px 14px 4px 0;color:#555">Subtotal</td><td style="padding:4px 0;text-align:right">${fmtInv(sub,cur)}</td></tr>
-        <tr><td style="padding:4px 14px 4px 0;color:#555">VAT ${vatPct}%</td><td style="padding:4px 0;text-align:right">${fmtInv(vatAmt,cur)}</td></tr>`:''}
-        <tr><td style="padding:6px 14px 6px 0;font-weight:700;font-size:13px">Total</td><td style="padding:6px 0;font-weight:700;font-size:13px;text-align:right">${fmtInv(total,cur)}</td></tr>
-        <tr><td style="padding:4px 14px 4px 0;font-weight:700">Balance Due</td><td style="padding:4px 0;font-weight:700;text-align:right">${fmtInv(inv.status==='Paid'?0:total,cur)}</td></tr>
+    <!-- TOTALS — right-aligned, calm hierarchy -->
+    <div style="display:flex;justify-content:flex-end;margin-top:22px;margin-bottom:34px">
+      <table style="min-width:280px;border-collapse:collapse">
+        ${vatPct?`<tr>
+          <td style="padding:5px 18px 5px 0;color:#6E7383;font-size:12px">Subtotal</td>
+          <td style="padding:5px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:#3A4A6B">${fmtInv(sub,cur)}</td>
+        </tr>
+        <tr>
+          <td style="padding:5px 18px 5px 0;color:#6E7383;font-size:12px">VAT ${vatPct}%</td>
+          <td style="padding:5px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:#3A4A6B">${fmtInv(vatAmt,cur)}</td>
+        </tr>`:''}
+        <tr>
+          <td style="padding:14px 18px 14px 0;font-family:'Fraunces',Georgia,serif;font-size:16px;font-weight:600;color:#0B2447;letter-spacing:-.015em;border-top:1.5px solid #0B2447">Total</td>
+          <td style="padding:14px 0;text-align:right;font-family:'Fraunces',Georgia,serif;font-size:18px;font-weight:600;color:#0B2447;letter-spacing:-.018em;border-top:1.5px solid #0B2447;font-feature-settings:'tnum'">${fmtInv(total,cur)}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 18px 6px 0;font-weight:600;color:${balance>0?'#C0392B':'#0E7C66'};font-size:11.5px;letter-spacing:.04em;text-transform:uppercase">Balance Due</td>
+          <td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:${balance>0?'#C0392B':'#0E7C66'};font-size:13px">${fmtInv(balance,cur)}</td>
+        </tr>
       </table>
     </div>
 
-    <!-- PAYMENT DETAILS -->
-    ${(S.bank||S.iban)?`<div style="margin-bottom:24px">
-      <div style="font-weight:700;margin-bottom:4px">Payment Method : Bank Transfer</div>
-      ${S.bank?`<div>Bank Details: ${S.bank}</div>`:''}
-      ${S.bic?`<div>BIC: &nbsp;&nbsp;&nbsp;${S.bic}</div>`:''}
-      ${S.iban?`<div>IBAN: &nbsp;&nbsp;${S.iban}</div>`:''}
-      ${S.bene?`<div>Beneficiary : ${S.bene}</div>`:''}
-      ${S.payinst?`<div style="margin-top:5px">${S.payinst}</div>`:''}
+    <!-- PAYMENT DETAILS — premium card -->
+    ${(S.bank||S.iban)?`<div style="background:#FAF8F4;border:1px solid #ECE6D9;border-radius:12px;padding:22px 24px;margin-bottom:30px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="width:32px;height:32px;border-radius:8px;background:#0B2447;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+        </div>
+        <div>
+          <div style="font-family:'Fraunces',Georgia,serif;font-size:14px;font-weight:600;color:#0B2447;letter-spacing:-.012em">Payment by Bank Transfer</div>
+          <div style="font-size:11px;color:#6E7383;letter-spacing:.04em">Please reference invoice ${inv.num}</div>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        ${S.bene?`<tr><td style="padding:4px 18px 4px 0;font-size:10.5px;color:#6E7383;text-transform:uppercase;letter-spacing:.1em;font-weight:600;width:120px">Beneficiary</td><td style="padding:4px 0;font-size:12.5px;color:#0B2447;font-weight:500">${S.bene}</td></tr>`:''}
+        ${S.bank?`<tr><td style="padding:4px 18px 4px 0;font-size:10.5px;color:#6E7383;text-transform:uppercase;letter-spacing:.1em;font-weight:600">Bank</td><td style="padding:4px 0;font-size:12.5px;color:#0B2447;font-weight:500">${S.bank}</td></tr>`:''}
+        ${S.iban?`<tr><td style="padding:4px 18px 4px 0;font-size:10.5px;color:#6E7383;text-transform:uppercase;letter-spacing:.1em;font-weight:600">IBAN</td><td style="padding:4px 0;font-family:'JetBrains Mono',monospace;font-size:12px;color:#0B2447;font-weight:600;letter-spacing:.02em">${S.iban}</td></tr>`:''}
+        ${S.bic?`<tr><td style="padding:4px 18px 4px 0;font-size:10.5px;color:#6E7383;text-transform:uppercase;letter-spacing:.1em;font-weight:600">BIC/SWIFT</td><td style="padding:4px 0;font-family:'JetBrains Mono',monospace;font-size:12px;color:#0B2447;font-weight:600;letter-spacing:.02em">${S.bic}</td></tr>`:''}
+      </table>
+      ${S.payinst?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid #ECE6D9;font-size:11.5px;color:#3A4A6B;line-height:1.6">${S.payinst}</div>`:''}
     </div>`:''}
 
-    ${inv.notes?`<div style="margin-bottom:20px;padding:10px;background:#f9f9f9;border-left:3px solid #ddd;font-size:11.5px">${inv.notes}</div>`:''}
+    ${inv.notes?`<div style="margin-bottom:30px;padding:14px 18px;background:#F4F1EA;border-left:3px solid #C0392B;border-radius:0 8px 8px 0;font-size:11.5px;color:#3A4A6B;line-height:1.6"><div style="font-size:10px;font-weight:600;color:#6E7383;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Notes</div>${inv.notes}</div>`:''}
 
     <!-- FOOTER -->
-    <div style="text-align:center;margin-top:30px;padding-top:16px;border-top:1px solid #eee">
-      <div style="font-weight:700;margin-bottom:4px">Thank you for your cooperation</div>
-      <div style="font-weight:700">${S.company||'AWAS.LTD'}</div>
-      ${S.email2?`<div>${S.email2}</div>`:''}
-      ${S.email?`<div>${S.email}</div>`:''}
-      ${S.website?`<div style="margin-top:3px">${S.website}</div>`:''}
+    <div style="margin-top:42px;padding-top:22px;border-top:1px solid #ECE6D9;display:flex;justify-content:space-between;align-items:flex-start;gap:24px">
+      <div>
+        <div style="font-family:'Fraunces',Georgia,serif;font-size:14px;font-weight:600;color:#0B2447;letter-spacing:-.012em;margin-bottom:2px">Thank you for your business.</div>
+        <div style="font-size:11.5px;color:#6E7383">Questions? Reach us at ${S.email2||S.email||'—'}</div>
+      </div>
+      <div style="text-align:right;font-size:10.5px;color:#6E7383;font-family:'JetBrains Mono',monospace;letter-spacing:.04em">
+        ${S.company||'AWAS LTD'} · ${inv.num} · Page 1
+      </div>
     </div>
 
     <!-- REMITTANCE SLIP -->
-    <div style="margin-top:40px;page-break-before:always">
-      <div style="text-align:center;margin-bottom:20px">
-        <div style="font-size:22px;font-weight:900;letter-spacing:3px">REMITTANCE</div>
+    <div style="margin-top:60px;page-break-before:always;padding-top:0">
+      <div style="height:4px;background:linear-gradient(90deg,#0B2447 0%,#0B2447 70%,#C0392B 70%,#C0392B 100%);margin-bottom:34px;border-radius:2px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:30px">
+        <div style="font-family:'Fraunces',Georgia,serif;font-size:30px;font-weight:500;color:#0B2447;letter-spacing:-.025em">Remittance Advice</div>
+        <div style="font-size:10.5px;color:#6E7383;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Return with payment</div>
       </div>
-      <table style="width:100%;border-collapse:collapse">
-        <tr><td style="padding:6px 12px 6px 0;color:#555;width:40%">Invoice No.:</td><td style="padding:6px 0;font-weight:700">${inv.num}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#555">Customer Name:</td><td style="padding:6px 0;font-weight:700">${client.name||''}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#555">Date :</td><td style="padding:6px 0;font-weight:700">${inv.date}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#555">Amount Enclosed:</td><td style="padding:6px 0;font-weight:700">${fmtInv(total,cur)}</td></tr>
+      <table style="width:100%;border-collapse:collapse;background:#FAF8F4;border:1px solid #ECE6D9;border-radius:12px;overflow:hidden">
+        <tr><td style="padding:14px 22px;font-size:10.5px;color:#6E7383;text-transform:uppercase;letter-spacing:.1em;font-weight:600;width:42%;border-bottom:1px solid #ECE6D9">Invoice No.</td><td style="padding:14px 22px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:#0B2447;border-bottom:1px solid #ECE6D9">${inv.num}</td></tr>
+        <tr><td style="padding:14px 22px;font-size:10.5px;color:#6E7383;text-transform:uppercase;letter-spacing:.1em;font-weight:600;border-bottom:1px solid #ECE6D9">Customer</td><td style="padding:14px 22px;font-size:13px;font-weight:500;color:#0B2447;border-bottom:1px solid #ECE6D9">${client.name||''}</td></tr>
+        <tr><td style="padding:14px 22px;font-size:10.5px;color:#6E7383;text-transform:uppercase;letter-spacing:.1em;font-weight:600;border-bottom:1px solid #ECE6D9">Date</td><td style="padding:14px 22px;font-size:13px;font-weight:500;color:#0B2447;border-bottom:1px solid #ECE6D9">${inv.date}</td></tr>
+        <tr><td style="padding:14px 22px;font-size:10.5px;color:#6E7383;text-transform:uppercase;letter-spacing:.1em;font-weight:600">Amount Enclosed</td><td style="padding:14px 22px;font-family:'Fraunces',Georgia,serif;font-size:20px;font-weight:600;color:#0B2447;letter-spacing:-.02em">${fmtInv(balance,cur)}</td></tr>
       </table>
-      <div style="text-align:right;margin-top:8px;font-size:11px;color:#888">Invoice #${inv.num}, Page 2</div>
+      <div style="text-align:right;margin-top:16px;font-size:10.5px;color:#6E7383;font-family:'JetBrains Mono',monospace;letter-spacing:.04em">${S.company||'AWAS LTD'} · ${inv.num} · Page 2</div>
     </div>
-
-    <div style="text-align:right;margin-top:8px;font-size:11px;color:#888">Invoice #${inv.num}, Page 1</div>
   </div>`;
 
   document.getElementById('pdf-invoice-body').innerHTML=html;
@@ -2638,11 +2773,11 @@ function printInvoice(){
   const content=document.getElementById('pdf-invoice-body').innerHTML;
   const pr=document.getElementById('print-root');
   pr.innerHTML=`<style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Arial,Helvetica,sans-serif;font-size:11.5pt;color:#1a1a1a}
-    @page{size:A4;margin:15mm 18mm 20mm 18mm}
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:10.5pt;color:#0B2447;letter-spacing:-.005em}
+    @page{size:A4;margin:14mm 16mm 18mm 16mm}
     table{border-collapse:collapse;width:100%}
-    th,td{padding:7pt 10pt;text-align:left}
     @media print{.no-print{display:none}}
   </style>`+content;
   pr.style.display='block';
@@ -2743,6 +2878,8 @@ function loadSettingsUI(){
 
 // ══════════════ INIT ══════════════
 function startApp(){
+  // Build sidebar nav with line icons
+  buildSidebarNav();
   // Step 1: Load from localStorage for instant UI
   const _d=localStorage.getItem('awas6'),_f=localStorage.getItem('awas6f');
   if(_d){try{DB=JSON.parse(_d)}catch(e){seed()}}else{seed()}
