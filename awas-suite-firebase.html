@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWAS Business Suite</title>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0d1117;--ink2:#1c2333;--ink3:#2d3748;
+  --navy:#1a2f5e;--navy2:#243f7a;--navy3:#e8ecf5;
+  --red:#c0392b;--red2:#e74c3c;--red3:#fdecea;
+  --green:#15803d;--green2:#bbf7d0;--green3:#f0fdf4;
+  --amber:#92400e;--amber2:#fde68a;--amber3:#fffbeb;
+  --blue:#1e40af;--blue2:#bfdbfe;--blue3:#eff6ff;
+  --purple:#6d28d9;--purple2:#ddd6fe;--purple3:#f5f3ff;
+  --bg:#f5f6fa;--card:#fff;--border:#e2e5ed;--border2:#c8cdd8;
+  --muted:#6b7280;--light:#9ca3af;
+  --r:12px;--rs:8px;--r-lg:18px;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.05);
+  --shm:0 4px 16px rgba(0,0,0,.1),0 1px 4px rgba(0,0,0,.06);
+  --shl:0 20px 60px rgba(0,0,0,.15),0 4px 16px rgba(0,0,0,.08);
+  --font:'Lato',sans-serif;--head:'Syne',sans-serif;--mono:'DM Mono',monospace;
+  --sidebar:250px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden;font-size:14px;line-height:1.5}
+
+/* ── SIDEBAR ── */
+#sb{width:var(--sidebar);background:var(--ink);position:fixed;left:0;top:0;bottom:0;display:flex;flex-direction:column;z-index:200;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.sb-brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-logo{display:flex;align-items:center;gap:11px}
+.sb-mark{width:38px;height:38px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-weight:800;color:#fff;font-size:12px;letter-spacing:.5px;flex-shrink:0}
+.sb-wordmark{font-family:var(--head);font-weight:800;font-size:17px;color:#fff;letter-spacing:-.3px}
+.sb-tagline{font-size:11px;color:rgba(255,255,255,.35);margin-top:1px;font-weight:300}
+.sb-nav{flex:1;overflow-y:auto;padding:10px 0;scrollbar-width:none}
+.sb-nav::-webkit-scrollbar{display:none}
+.sb-group{padding:16px 16px 5px;font-size:10px;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--head)}
+.sb-link{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:1px 8px;border-radius:var(--rs);cursor:pointer;color:rgba(255,255,255,.45);font-size:13px;font-weight:400;transition:all .15s;position:relative;user-select:none}
+.sb-link:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+.sb-link.on{background:rgba(255,255,255,.09);color:#fff;font-weight:700}
+.sb-link.on::before{content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:55%;background:var(--red);border-radius:0 3px 3px 0}
+.sb-ico{font-size:15px;width:20px;text-align:center;flex-shrink:0;opacity:.8}
+.sb-link.on .sb-ico{opacity:1}
+.sb-bdg{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center;font-family:var(--mono)}
+.sb-foot{padding:14px;border-top:1px solid rgba(255,255,255,.06)}
+.sb-user{display:flex;align-items:center;gap:9px;padding:9px 11px;background:rgba(255,255,255,.05);border-radius:var(--rs)}
+.sb-av{width:32px;height:32px;background:linear-gradient(135deg,var(--navy2),#3a5ca8);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;font-family:var(--head);flex-shrink:0}
+.sb-uname{font-size:13px;font-weight:700;color:#fff;font-family:var(--head)}
+.sb-urole{font-size:11px;color:rgba(255,255,255,.35);font-weight:300}
+#sb-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;backdrop-filter:blur(2px)}
+#sb-ov.on{display:block}
+
+/* ── MAIN ── */
+#main{margin-left:var(--sidebar);flex:1;min-height:100vh;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
+#topbar{height:60px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 var(--border)}
+#mob-tog{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink);padding:4px}
+.tb-inf{flex:1;min-width:0}
+.tb-title{font-size:17px;font-weight:800;color:var(--ink);font-family:var(--head);letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-sub{font-size:12px;color:var(--muted);font-weight:300}
+.tb-acts{display:flex;gap:8px;align-items:center;flex-shrink:0}
+#content{flex:1;padding:24px;overflow-x:hidden;overflow-y:auto}
+
+/* ── PAGES ── */
+.page{display:none;animation:pgIn .25s ease forwards}
+.page.on{display:block}
+@keyframes pgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .15s;font-family:var(--font);line-height:1;white-space:nowrap;letter-spacing:.1px}
+.btn:active{transform:scale(.97)}
+.btn-dark{background:var(--ink);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.btn-dark:hover{background:var(--ink2)}
+.btn-red{background:var(--red);color:#fff;box-shadow:0 2px 8px rgba(192,57,43,.3)}
+.btn-red:hover{background:var(--red2)}
+.btn-green{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(21,128,61,.25)}
+.btn-green:hover{filter:brightness(1.1)}
+.btn-outline{background:#fff;color:var(--ink);border:1.5px solid var(--border2)}
+.btn-outline:hover{border-color:var(--ink);background:var(--bg)}
+.btn-ghost{background:transparent;color:var(--muted);border:none;padding:7px 12px}
+.btn-ghost:hover{background:var(--bg);color:var(--ink)}
+.btn-purple{background:var(--purple);color:#fff;box-shadow:0 2px 8px rgba(109,40,217,.25)}
+.btn-purple:hover{filter:brightness(1.1)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-xs{padding:3px 9px;font-size:11px}
+
+/* ── CARDS ── */
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh)}
+.card-hd{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.card-title{font-size:14px;font-weight:800;color:var(--ink);font-family:var(--head);letter-spacing:-.2px}
+.card-body{padding:20px}
+
+/* ── KPI ── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:24px}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.kpi-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
+.kpi-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;font-family:var(--head)}
+.kpi-val{font-size:24px;font-weight:800;color:var(--ink);font-family:var(--head);letter-spacing:-.5px;line-height:1}
+.kpi-sub{font-size:12px;color:var(--muted);margin-top:5px;font-weight:300}
+
+/* ── BADGES ── */
+.tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;white-space:nowrap;font-family:var(--head);letter-spacing:.2px}
+.tg{background:var(--green3);color:var(--green)}.tr{background:var(--red3);color:var(--red)}
+.ta{background:var(--amber3);color:var(--amber)}.tb{background:var(--blue3);color:var(--blue)}
+.tx{background:#f1f3f5;color:var(--muted)}.tn{background:var(--navy3);color:var(--navy)}
+.tp{background:var(--purple3);color:var(--purple)}
+.sv-air{background:#dbeafe;color:#1e3a8a}.sv-amb{background:#dcfce7;color:#14532d}
+.sv-esc{background:#ffedd5;color:#7c2d12}.sv-tr{background:#f3e8ff;color:#4c1d95}
+.sv-fee{background:#e0e7ff;color:#1e1b4b}.sv-ast{background:#ffe4e6;color:#881337}
+
+/* ── TABLES ── */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;padding:10px 14px;text-align:left;background:#f9fafb;border-bottom:1px solid var(--border);white-space:nowrap;font-family:var(--head)}
+td{padding:11px 14px;border-bottom:1px solid #f3f4f6;vertical-align:middle;font-size:13.5px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbff}
+.td-b{font-weight:700;color:var(--ink)}
+.td-m{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.td-acts{display:flex;gap:4px;align-items:center}
+
+/* ── FORMS ── */
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg2{grid-column:span 2}.fg3{grid-column:span 3}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-family:var(--head)}
+input,select,textarea{border:1.5px solid var(--border);border-radius:var(--rs);padding:9px 12px;font-size:14px;font-family:var(--font);color:var(--ink);background:#fff;outline:none;width:100%;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(26,47,94,.1)}
+input[readonly]{background:#f9fafb;font-weight:700;color:var(--ink3)}
+input.ai-hit,select.ai-hit,textarea.ai-hit{border-color:var(--purple)!important;background:var(--purple3)!important;box-shadow:0 0 0 3px rgba(109,40,217,.1)!important}
+textarea{resize:vertical;min-height:68px}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* ── MODAL ── */
+.mover{position:fixed;inset:0;background:rgba(13,17,23,.6);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.mover.on{display:flex;animation:mIn .2s ease}
+@keyframes mIn{from{opacity:0}to{opacity:1}}
+.modal{background:#fff;border-radius:var(--r-lg);box-shadow:var(--shl);width:100%;max-height:92vh;overflow-y:auto;animation:mdIn .22s cubic-bezier(.34,1.56,.64,1)}
+@keyframes mdIn{from{transform:scale(.93);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-hd{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2;border-radius:var(--r-lg) var(--r-lg) 0 0}
+.modal-title{font-size:17px;font-weight:800;color:var(--ink);font-family:var(--head);letter-spacing:-.3px}
+.modal-close{width:30px;height:30px;border:none;background:var(--bg);border-radius:7px;cursor:pointer;font-size:15px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--border);color:var(--ink)}
+.modal-body{padding:24px}
+
+/* ── TOAST ── */
+#tc{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:7px;pointer-events:none}
+.toast{background:#fff;border-radius:10px;box-shadow:var(--shm);padding:11px 15px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;animation:tIn .3s ease;min-width:220px;border-left:4px solid var(--ink);pointer-events:all;font-family:var(--head)}
+.toast.ok{border-color:var(--green)}.toast.err{border-color:var(--red)}.toast.warn{border-color:var(--amber)}.toast.ai{border-color:var(--purple)}
+@keyframes tIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:2px;background:#eef0f4;padding:3px;border-radius:9px;margin-bottom:20px;width:fit-content}
+.tab{padding:7px 16px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .15s;font-family:var(--head)}
+.tab.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+
+/* ── FILTER BAR ── */
+.fbar{display:flex;align-items:center;gap:9px;margin-bottom:16px;flex-wrap:wrap}
+.fbar input{max-width:220px;padding:7px 12px;font-size:13px}
+.fbar select{padding:7px 12px;font-size:13px;width:auto}
+
+/* ── PIPELINE ── */
+.pipeline{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;margin-bottom:24px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;-webkit-overflow-scrolling:touch}
+.pipeline::-webkit-scrollbar{height:6px}
+.pipeline::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+.pcol{flex:0 0 230px;min-width:230px;background:#f1f3f7;border-radius:var(--r);padding:12px;border:1px solid var(--border)}
+.pcol-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pcol-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;font-family:var(--head)}
+.pcol-cnt{background:#fff;color:var(--ink);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid var(--border);font-family:var(--mono);min-width:20px;text-align:center}
+.pcard{background:#fff;border-radius:var(--rs);padding:12px;margin-bottom:8px;border:1px solid var(--border);cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.pcard:hover{border-color:var(--ink);box-shadow:var(--shm);transform:translateY(-1px)}
+.pcard:last-child{margin-bottom:0}
+.pc-ref{font-size:10px;font-weight:700;color:var(--muted);font-family:var(--mono);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.pc-name{font-size:13.5px;font-weight:800;color:var(--ink);font-family:var(--head);margin-bottom:5px;line-height:1.3}
+.pc-svcs{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:7px}
+.pc-fin{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding-top:8px;border-top:1px solid var(--border)}
+.pc-fi-lbl{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;font-family:var(--head);margin-bottom:2px}
+.pc-fi-val{font-size:12px;font-weight:800;font-family:var(--mono)}
+
+/* ── CASE DETAIL ── */
+.cd-wrap{background:#fff;border-radius:var(--r-lg);border:1px solid var(--border);box-shadow:var(--shm);overflow:hidden}
+.cd-hdr{background:var(--ink);padding:26px 28px;color:#fff;position:relative;overflow:hidden}
+.cd-hdr::after{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04);pointer-events:none}
+.cd-ref{font-family:var(--mono);font-size:12px;opacity:.5;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.cd-name{font-size:22px;font-weight:800;font-family:var(--head);letter-spacing:-.4px;margin-bottom:10px}
+.cd-chips{display:flex;gap:6px;flex-wrap:wrap}
+
+/* STEP FLOW */
+.step-flow{display:flex;gap:0;margin-bottom:0;border-bottom:1px solid var(--border)}
+.step{flex:1;padding:14px 20px;display:flex;align-items:center;gap:10px;border-right:1px solid var(--border);cursor:pointer;transition:background .15s;position:relative}
+.step:last-child{border-right:none}
+.step:hover{background:#f9fafb}
+.step.active-step{background:#f9fafb}
+.step.active-step::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--ink)}
+.step-num{width:26px;height:26px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--muted);flex-shrink:0;font-family:var(--head);transition:all .15s}
+.step.done .step-num{background:var(--green);border-color:var(--green);color:#fff}
+.step.active-step .step-num{background:var(--ink);border-color:var(--ink);color:#fff}
+.step-info{}
+.step-label{font-size:12px;font-weight:800;color:var(--ink);font-family:var(--head);letter-spacing:-.1px}
+.step-desc{font-size:11px;color:var(--muted);font-weight:300}
+
+/* STEP PANELS */
+.step-panel{display:none;padding:24px 28px}
+.step-panel.on{display:block;animation:pgIn .2s ease}
+
+/* FIN STRIP */
+.fin-strip{display:grid;grid-template-columns:repeat(6,1fr);border-bottom:1px solid var(--border)}
+.fin-cell{padding:14px 16px;text-align:center;border-right:1px solid var(--border)}
+.fin-cell:last-child{border-right:none}
+.fin-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px;font-family:var(--head)}
+.fin-val{font-size:17px;font-weight:800;font-family:var(--head);color:var(--ink)}
+.fin-val.gn{color:var(--green)}.fin-val.rd{color:var(--red)}.fin-val.am{color:var(--amber)}
+
+/* SERVICE LINE ITEMS */
+.svc-line-item{background:#f9fafb;border:1.5px solid var(--border);border-radius:var(--rs);padding:14px;margin-bottom:10px;position:relative;transition:border-color .15s}
+.svc-line-item:hover{border-color:var(--border2)}
+.sli-remove{position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:var(--red3);color:var(--red);border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;font-weight:700;line-height:1;transition:all .15s}
+.sli-remove:hover{background:var(--red);color:#fff}
+.add-svc-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:12px;border:2px dashed var(--border2);border-radius:var(--rs);cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);background:transparent;transition:all .18s;font-family:var(--head)}
+.add-svc-btn:hover{border-color:var(--ink);color:var(--ink);background:var(--bg)}
+
+/* TOTALS BOX */
+.totals-box{background:#f9fafb;border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;margin-top:10px}
+.tot-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13.5px}
+.tot-row.final{border-top:1.5px solid var(--border2);margin-top:5px;padding-top:10px;font-weight:800;font-size:15px;font-family:var(--head)}
+
+/* CLIENT INVOICE PREVIEW */
+.inv-doc{background:#fff;border:1.5px solid var(--border);border-radius:var(--rs);overflow:hidden}
+.inv-doc-hd{background:var(--ink);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+.inv-doc-hd-left{font-family:var(--head);font-weight:800;font-size:15px}
+.inv-doc-hd-right{font-family:var(--mono);font-size:12px;opacity:.7}
+.inv-line{display:flex;padding:10px 18px;border-bottom:1px solid #f3f4f6;font-size:13.5px;align-items:center}
+.inv-line:last-child{border-bottom:none}
+.inv-line-name{flex:1;font-weight:700;color:var(--ink)}
+.inv-line-desc{font-size:12px;color:var(--muted);margin-top:1px}
+.inv-line-amt{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--ink)}
+.inv-totals{background:#f9fafb;padding:12px 18px}
+.inv-tr{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
+.inv-tr.final{font-weight:800;font-size:15px;font-family:var(--head);border-top:1.5px solid var(--border2);margin-top:5px;padding-top:10px}
+
+/* PROVIDER INVOICE ROW */
+.pi-row{display:flex;align-items:flex-start;padding:12px 14px;border-bottom:1px solid #f3f4f6;gap:10px;transition:background .12s}
+.pi-row:last-child{border-bottom:none}
+.pi-row:hover{background:#fafbff}
+.pi-row-main{flex:1;min-width:0}
+.pi-row-ref{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.pi-row-name{font-size:13.5px;font-weight:700;color:var(--ink);font-family:var(--head)}
+.pi-row-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.pi-row-right{text-align:right;flex-shrink:0;min-width:110px}
+.pi-row-amt{font-size:14px;font-weight:800;font-family:var(--head);color:var(--ink)}
+.pi-row-btns{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.pay-btn{cursor:pointer;padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;border:none;transition:all .15s;white-space:nowrap;font-family:var(--head)}
+.pay-btn.do-pay{background:var(--green3);color:var(--green)}.pay-btn.do-pay:hover{background:var(--green);color:#fff}
+.pay-btn.do-unpay{background:var(--red3);color:var(--red)}.pay-btn.do-unpay:hover{background:var(--red);color:#fff}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--rs);padding:22px;text-align:center;cursor:pointer;transition:all .18s;background:#fafbfd}
+.upload-zone:hover,.upload-zone.dov{border-color:var(--purple);background:var(--purple3)}
+.uz-ico{font-size:28px;margin-bottom:8px;opacity:.45}
+.uz-t{font-size:13px;font-weight:700;color:var(--ink);font-family:var(--head);margin-bottom:3px}
+.uz-s{font-size:12px;color:var(--muted);font-weight:300}
+.ai-box{background:var(--purple3);border:1.5px solid var(--purple2);border-radius:var(--rs);padding:14px 16px;margin-bottom:16px}
+.ai-box-title{font-size:13px;font-weight:800;color:var(--purple);font-family:var(--head);margin-bottom:7px;display:flex;align-items:center;gap:7px}
+.ai-box-st{font-size:12.5px;color:var(--muted);font-weight:300}
+.ai-spin{display:inline-block;width:13px;height:13px;border:2px solid var(--purple2);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-prev{background:#fff;border-radius:7px;padding:10px;margin-top:8px;font-size:11px;color:var(--muted);max-height:140px;overflow-y:auto;white-space:pre-wrap;font-family:var(--mono);border:1px solid var(--purple2)}
+.doc-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 11px;background:#f1f3f5;border-radius:7px;font-size:12px;color:var(--ink);font-weight:700;margin-top:7px;border:1px solid var(--border);font-family:var(--head)}
+.doc-chip a{color:var(--blue);text-decoration:none}
+
+/* DIR GRID */
+.dir-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.dir-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);padding:18px 20px;cursor:pointer;transition:all .15s}
+.dir-card:hover{border-color:var(--ink);box-shadow:var(--shm)}
+.dir-av{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;flex-shrink:0;font-family:var(--head)}
+.dir-name{font-size:14px;font-weight:800;color:var(--ink);font-family:var(--head)}
+.dir-sub{font-size:12px;color:var(--muted);margin-top:2px;font-weight:300}
+.dir-stat{font-size:12px;font-weight:700;margin-top:10px}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px}
+.empty-ico{font-size:36px;margin-bottom:12px;opacity:.35}
+.empty-t{font-size:15px;font-weight:800;color:var(--ink);font-family:var(--head);margin-bottom:5px}
+.empty-s{font-size:13px;color:var(--muted);font-weight:300}
+
+/* REPORT ROWS */
+.rr{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f3f4f6;font-size:13.5px}
+.rr:last-child{border-bottom:none}
+.rr-b{font-weight:800;font-size:15px;font-family:var(--head);padding:11px 0;color:var(--ink)}
+.rr-i{padding-left:18px;color:var(--muted);font-weight:300}
+.r-sec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:14px 0 5px;font-family:var(--head)}
+
+/* MOBILE */
+@media(max-width:900px){#sb{transform:translateX(-100%)}#sb.on{transform:translateX(0)}#main{margin-left:0}#mob-tog{display:flex!important}.kpi-row{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr}.fg2,.fg3{grid-column:span 1}#content{padding:14px}.fin-strip{grid-template-columns:repeat(3,1fr)}.fin-cell:nth-child(3){border-right:none}.fin-cell:nth-child(n+4){border-top:1px solid var(--border)}}
+@media(max-width:500px){.kpi-row{grid-template-columns:1fr}.step-label{display:none}.pcol{flex:0 0 190px;min-width:190px}}
+/* Pipeline always scrolls — never hidden under sidebar */
+#cv-pipe,#pipeline-wrap{width:100%;overflow:hidden}
+.pipeline{width:100%;display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.pcol{flex:0 0 230px;min-width:230px}
+</style>
+</head>
+<body>
+<div style="display:flex;min-height:100vh">
+
+<!-- SIDEBAR -->
+<div id="sb">
+  <div class="sb-brand">
+    <div class="sb-logo">
+      <div class="sb-mark">AWAS</div>
+      <div><div class="sb-wordmark">AWAS Suite</div><div class="sb-tagline">Medical Assistance</div></div>
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-group">Overview</div>
+    <div class="sb-link on" onclick="go('dash')"><span class="sb-ico">◈</span>Dashboard</div>
+    <div class="sb-group">Operations</div>
+    <div class="sb-link" onclick="go('cases')"><span class="sb-ico">🚑</span>Cases<span class="sb-bdg" id="bdg-cases"></span></div>
+    <div class="sb-group">Finance</div>
+    <div class="sb-link" onclick="go('client-inv')"><span class="sb-ico">📄</span>Invoices<span class="sb-bdg" id="bdg-ci"></span></div>
+    <div class="sb-link" onclick="go('prov-inv')"><span class="sb-ico">📥</span>Provider Invoices<span class="sb-bdg" id="bdg-pi"></span></div>
+    <div class="sb-link" onclick="go('reports')"><span class="sb-ico">📊</span>Reports</div>
+    <div class="sb-group">Directory</div>
+    <div class="sb-link" onclick="go('clients')"><span class="sb-ico">👤</span>Clients</div>
+    <div class="sb-link" onclick="go('providers')"><span class="sb-ico">🏥</span>Providers</div>
+    <div class="sb-group">System</div>
+    <div class="sb-link" onclick="go('settings')"><span class="sb-ico">⚙</span>Settings</div>
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-user"><div class="sb-av">A</div><div><div class="sb-uname">AWAS</div><div class="sb-urole">Medical Assistance</div></div></div>
+  </div>
+</div>
+<div id="sb-ov" onclick="closeSB()"></div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <button id="mob-tog" style="display:none" onclick="toggleSB()">☰</button>
+    <div class="tb-inf"><div class="tb-title" id="pg-t">Dashboard</div><div class="tb-sub" id="pg-s">AWAS — Business Overview</div></div>
+    <div class="tb-acts">
+      <span id="sync-status" style="font-size:11px;font-weight:700;font-family:var(--mono);color:var(--muted);white-space:nowrap">💾 Local</span>
+      <button class="btn btn-outline btn-sm" id="tb-sec" style="display:none" onclick="secAct()"></button>
+      <button class="btn btn-dark btn-sm" id="tb-main" style="display:none" onclick="mainAct()">+</button>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- DASHBOARD -->
+    <div class="page on" id="page-dash">
+      <!-- ALERT BANNER -->
+      <div id="dash-alerts"></div>
+      <!-- QUICK SEARCH -->
+      <div style="position:relative;margin-bottom:20px">
+        <input type="text" id="global-search" placeholder="🔍  Quick search — cases, invoices, clients, providers…" oninput="globalSearch(this.value)"
+          style="width:100%;padding:11px 16px 11px 40px;font-size:14px;border:1.5px solid var(--border2);border-radius:var(--r);box-shadow:var(--sh);background:#fff">
+        <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.4">🔍</span>
+        <div id="search-results" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1.5px solid var(--border2);border-radius:var(--r);box-shadow:var(--shm);z-index:200;max-height:320px;overflow-y:auto"></div>
+      </div>
+      <div class="kpi-row" id="kpi-row"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px" id="d2a">
+        <div class="card"><div class="card-hd"><span class="card-title">Active Cases</span><button class="btn btn-outline btn-sm" onclick="go('cases')">All Cases</button></div><div id="d-cases"></div></div>
+        <div class="card"><div class="card-hd"><span class="card-title">Financials at a Glance</span></div><div class="card-body" style="padding-bottom:32px"><div id="d-chart" style="height:160px;display:flex;align-items:flex-end;gap:6px;padding-bottom:26px"></div></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px" id="d2b">
+        <div class="card"><div class="card-hd"><span class="card-title">📄 Invoices — Unpaid</span><button class="btn btn-outline btn-sm" onclick="go('client-inv')">All</button></div><div id="d-ci"></div></div>
+        <div class="card"><div class="card-hd"><span class="card-title">📥 Provider Invoices — Pending</span><button class="btn btn-outline btn-sm" onclick="go('prov-inv')">All</button></div><div id="d-pi"></div></div>
+      </div>
+    </div>
+
+    <!-- CASES -->
+    <div class="page" id="page-cases">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+        <div class="tabs" id="case-tabs" style="margin-bottom:0">
+          <button class="tab on" onclick="swCaseView('pipe',this)">🔀 Pipeline</button>
+          <button class="tab" onclick="swCaseView('tbl',this)">📋 Table</button>
+        </div>
+        <button class="btn btn-dark" onclick="resetCase();openM('m-case')" style="font-size:14px;padding:10px 22px">
+          <span style="font-size:16px">+</span> New Case
+        </button>
+      </div>
+      <div id="cv-pipe" style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch"><div class="pipeline" id="pipeline" style="display:flex;gap:12px;padding-bottom:12px;min-width:max-content"></div></div>
+      <div id="cv-tbl" style="display:none">
+        <div class="fbar">
+          <input type="text" placeholder="🔍 Search cases…" oninput="fCaseTbl(this.value)">
+          <select onchange="fCaseSt(this.value)"><option value="">All Statuses</option><option>New</option><option>In Progress</option><option>Pending</option><option>Completed</option><option>Closed</option></select>
+        </div>
+        <div class="card"><div class="tw"><table>
+          <thead><tr><th>Ref</th><th>Client</th><th>Services</th><th>Date</th><th>Billed</th><th>Collected</th><th>Costs</th><th>Margin</th><th>Status</th><th></th></tr></thead>
+          <tbody id="case-tbody"></tbody>
+        </table></div></div>
+      </div>
+      <!-- CASE DETAIL -->
+      <div id="case-det-wrap" style="display:none;margin-top:22px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <span style="font-family:var(--head);font-weight:800;font-size:16px">Case Detail</span>
+          <button class="btn btn-ghost btn-sm" onclick="closeDet()">✕ Close</button>
+        </div>
+        <div class="cd-wrap" id="case-det"></div>
+      </div>
+    </div>
+
+    <!-- INVOICES -->
+    <div class="page" id="page-client-inv">
+      <div class="fbar">
+        <input type="text" placeholder="🔍 Search invoices…" oninput="fCIq(this.value)">
+        <select onchange="fCISt(this.value)"><option value="">All</option><option>Draft</option><option>Sent</option><option>Paid</option><option>Overdue</option></select>
+        <select onchange="fCICase(this.value)" id="ci-cf"><option value="">All Cases</option></select>
+        <select onchange="fCIClient(this.value)" id="ci-clf"><option value="">All Clients</option></select>
+      </div>
+      <div class="card"><div class="tw"><table>
+        <thead><tr><th>Invoice #</th><th>Case Ref</th><th>Client</th><th>Ext. Ref</th><th>Services</th><th>Date</th><th>Due</th><th>Total</th><th>Payment</th><th>Actions</th></tr></thead>
+        <tbody id="ci-tbody"></tbody>
+      </table></div></div>
+    </div>
+
+    <!-- PROVIDER INVOICES -->
+    <div class="page" id="page-prov-inv">
+      <div class="fbar">
+        <input type="text" placeholder="🔍 Search…" oninput="fPIq(this.value)">
+        <select onchange="fPISt(this.value)"><option value="">All</option><option>Pending</option><option>Paid</option><option>Disputed</option></select>
+        <select onchange="fPICase(this.value)" id="pi-cf"><option value="">All Cases</option></select>
+        <select onchange="fPIProv(this.value)" id="pi-pf"><option value="">All Providers</option></select>
+      </div>
+      <div class="card"><div class="tw"><table>
+        <thead><tr><th>Our Ref</th><th>Case</th><th>Provider</th><th>Prov. Invoice #</th><th>Category</th><th>Date</th><th>Amount</th><th>File</th><th>Payment</th><th></th></tr></thead>
+        <tbody id="pi-tbody"></tbody>
+      </table></div></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="page" id="page-reports">
+      <div class="tabs">
+        <button class="tab on" onclick="swRep('pl',this)">P&L</button>
+        <button class="tab" onclick="swRep('cf',this)">Cash Flow</button>
+        <button class="tab" onclick="swRep('aged',this)">Aged</button>
+        <button class="tab" onclick="swRep('bycase',this)">By Case</button>
+        <button class="tab" onclick="swRep('bysvc',this)">By Service</button>
+      </div>
+      <div style="max-width:740px"><div class="card" id="rep-body"></div></div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div class="page" id="page-clients">
+      <div class="fbar"><input type="text" placeholder="🔍 Search clients…" oninput="fDirC(this.value)" style="max-width:280px"></div>
+      <div class="dir-grid" id="dir-clients"></div>
+    </div>
+
+    <!-- PROVIDERS -->
+    <div class="page" id="page-providers">
+      <div class="fbar">
+        <input type="text" placeholder="🔍 Search providers…" oninput="fDirP(this.value)" style="max-width:280px">
+        <select onchange="fDirPT(this.value)"><option value="">All Types</option><option>Hospital/Clinic</option><option>Air Ambulance</option><option>Ground Ambulance</option><option>Pharmacy</option><option>Hotel</option><option>Transport</option><option>Other</option></select>
+      </div>
+      <div class="dir-grid" id="dir-providers"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div style="max-width:660px">
+
+        <!-- LOGO + COMPANY -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-hd"><span class="card-title">🏢 Company Identity</span><span style="font-size:12px;color:var(--muted)">Used on all PDF invoices</span></div>
+          <div class="card-body">
+            <!-- LOGO UPLOAD -->
+            <div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+              <div id="logo-preview" style="width:100px;height:80px;border:2px dashed var(--border2);border-radius:var(--rs);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#f9fafb;overflow:hidden;cursor:pointer" onclick="document.getElementById('logo-file').click()">
+                <span style="font-size:11px;color:var(--muted);text-align:center;font-weight:700;font-family:var(--head)">Click to<br>Upload Logo</span>
+              </div>
+              <div style="flex:1">
+                <div style="font-family:var(--head);font-weight:800;font-size:13.5px;margin-bottom:4px">Company Logo</div>
+                <div style="font-size:12px;color:var(--muted);font-weight:300;margin-bottom:10px">PNG or JPG recommended. Appears top-left on all PDF invoices.</div>
+                <button class="btn btn-outline btn-sm" onclick="document.getElementById('logo-file').click()">📁 Upload Logo</button>
+                <button class="btn btn-ghost btn-sm" onclick="clearLogo()">✕ Remove</button>
+                <input type="file" id="logo-file" style="display:none" accept=".png,.jpg,.jpeg,.svg,.webp" onchange="uploadLogo(event)">
+              </div>
+            </div>
+            <div class="g2">
+              <div class="fg"><label>Company Name</label><input id="s-co" value="AWAS. LTD"></div>
+              <div class="fg"><label>VAT No</label><input id="s-vat-no" placeholder="e.g. BG202934325"></div>
+              <div class="fg fg2"><label>Business Description</label><input id="s-desc" placeholder="e.g. MEDICAL ASSISTANCE SERVICES- MEDICAL REPATRIATION AND AIR AMBULANCE"></div>
+              <div class="fg fg2"><label>Address Line 1</label><input id="s-addr1" placeholder="Street address"></div>
+              <div class="fg"><label>City / Postcode</label><input id="s-addr2" placeholder="e.g. Blagoevgrad 2700"></div>
+              <div class="fg"><label>Country</label><input id="s-country" placeholder="e.g. Bulgaria"></div>
+              <div class="fg"><label>Email 1</label><input id="s-em" placeholder="info@awasmed.com"></div>
+              <div class="fg"><label>Email 2 (accounts)</label><input id="s-em2" placeholder="accounts@awasmed.com"></div>
+              <div class="fg"><label>Website</label><input id="s-web" placeholder="www.awasmed.com"></div>
+              <div class="fg"><label>Phone</label><input id="s-ph"></div>
+              <div class="fg"><label>Default Currency</label><select id="s-cur"><option value="EUR">EUR</option><option value="USD">USD</option><option value="GBP">GBP</option></select></div>
+              <div class="fg"><label>Default VAT %</label><input type="number" id="s-vat" value="0"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BANK DETAILS -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-hd"><span class="card-title">🏦 Bank Details</span><span style="font-size:12px;color:var(--muted)">Printed on every invoice</span></div>
+          <div class="card-body"><div class="g2">
+            <div class="fg"><label>Bank Name</label><input id="s-bank" placeholder="e.g. ProCredit Bank"></div>
+            <div class="fg"><label>BIC / SWIFT</label><input id="s-bic" placeholder="e.g. PRCBBGSF"></div>
+            <div class="fg fg2"><label>IBAN</label><input id="s-iban" placeholder="e.g. BG67PRCB92301448715916"></div>
+            <div class="fg fg2"><label>Beneficiary Name</label><input id="s-bene" placeholder="e.g. AWAS LTD"></div>
+            <div class="fg fg2"><label>Additional Payment Instructions</label><textarea id="s-payinst" rows="2" placeholder="Any other payment notes…"></textarea></div>
+          </div>
+          <div class="form-actions"><button class="btn btn-dark" onclick="saveSettings()">💾 Save All Settings</button></div>
+          </div>
+        </div>
+
+        <!-- FIREBASE SETUP -->
+        <div class="card" style="margin-bottom:18px;border:2px solid #ff6b35">
+          <div class="card-hd" style="background:linear-gradient(135deg,#ff6b35,#f7931e)">
+            <span class="card-title" style="color:#fff">🔥 Firebase Cloud Sync</span>
+            <span id="sync-status-big" style="font-size:12px;color:rgba(255,255,255,.8);font-weight:700"></span>
+          </div>
+          <div class="card-body">
+            <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--rs);padding:12px 14px;margin-bottom:16px;font-size:13px;color:#92400e">
+              <strong>One-time setup:</strong> Add your Firebase config below to sync across all devices in real-time.
+              All data is stored in your <strong>healthwatch-tpa</strong> Firestore project under the <code style="background:#fee2e2;padding:1px 5px;border-radius:4px">awas_suite</code> collection.
+            </div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.8">
+              <strong style="color:var(--ink)">How to get your config:</strong><br>
+              1. Go to <a href="https://console.firebase.google.com" target="_blank" style="color:var(--blue)">console.firebase.google.com</a><br>
+              2. Open <strong>healthwatch-tpa</strong> project<br>
+              3. Click ⚙️ → <strong>Project Settings</strong><br>
+              4. Scroll to <strong>Your apps</strong> → copy the <code style="background:#f1f3f5;padding:1px 5px;border-radius:4px">firebaseConfig</code> object<br>
+              5. Paste each value in the fields below
+            </div>
+            <div class="g2">
+              <div class="fg fg2"><label>API Key</label><input id="fb-apikey" placeholder="AIzaSy…" oninput="saveFBConfig()"></div>
+              <div class="fg"><label>Project ID</label><input id="fb-projectid" placeholder="healthwatch-tpa" oninput="saveFBConfig()"></div>
+              <div class="fg"><label>App ID</label><input id="fb-appid" placeholder="1:xxx:web:xxx" oninput="saveFBConfig()"></div>
+              <div class="fg"><label>Messaging Sender ID</label><input id="fb-senderid" placeholder="123456789" oninput="saveFBConfig()"></div>
+            </div>
+            <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px">
+              <button class="btn btn-dark" onclick="applyFBConfig()">🔥 Connect Firebase</button>
+              <button class="btn btn-outline" onclick="manualSync()">⟳ Sync Now</button>
+              <button class="btn btn-outline" onclick="pullFromCloud()">⬇ Pull from Cloud</button>
+            </div>
+          </div>
+        </div>
+          <div class="card-body">
+            <div class="fg"><label>Anthropic API Key</label><input type="password" id="s-key" placeholder="sk-ant-…" oninput="localStorage.setItem('awas_k',this.value)"></div>
+            <div style="margin-top:8px;font-size:12px;color:var(--muted);font-weight:300">🔒 Stored only in this browser.</div>
+          </div>
+        </div>
+
+        <!-- DATA -->
+        <div class="card">
+          <div class="card-hd"><span class="card-title">Data</span></div>
+          <div class="card-body"><div style="display:flex;gap:9px;flex-wrap:wrap">
+            <button class="btn btn-outline" onclick="exportData()">📤 Export JSON</button>
+            <button class="btn btn-outline" onclick="document.getElementById('imp-f').click()">📥 Import JSON</button>
+            <button class="btn btn-red btn-sm" onclick="if(confirm('Clear ALL data?'))clearAll()">🗑️ Clear All</button>
+          </div><input type="file" id="imp-f" style="display:none" accept=".json" onchange="importData(event)"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div>
+
+<!-- ════════════ CASE MODAL ════════════ -->
+<div class="mover" id="m-case">
+<div class="modal" style="max-width:720px">
+  <div class="modal-hd"><span class="modal-title" id="m-case-t">New Case</span><button class="modal-close" onclick="closeM('m-case')">✕</button></div>
+  <div class="modal-body">
+    <div class="g3" style="margin-bottom:16px">
+      <div class="fg"><label>Case Reference #</label><input id="c-ref" placeholder="AWAS-2026-001"></div>
+      <div class="fg"><label>Date</label><input type="date" id="c-date"></div>
+      <div class="fg"><label>Status</label><select id="c-status"><option>New</option><option>In Progress</option><option>Pending</option><option>Completed</option><option>Closed</option></select></div>
+      <div class="fg"><label>Client</label><select id="c-client"><option value="">— Select Client —</option></select></div>
+      <div class="fg"><label>External Ref No <span style="color:var(--muted);font-size:10px">(insurer/partner ref)</span></label><input id="c-extref" placeholder="e.g. HDI/242681"></div>
+      <div class="fg"><label>Patient Name</label><input id="c-patient" placeholder="Full name"></div>
+      <div class="fg"><label>Nationality</label><input id="c-nat"></div>
+      <div class="fg"><label>Origin</label><input id="c-origin" placeholder="City / hospital / airport"></div>
+      <div class="fg"><label>Destination</label><input id="c-dest" placeholder="City / hospital / airport"></div>
+      <div class="fg"><label>Service Date</label><input type="date" id="c-svcdate"></div>
+      <div class="fg fg3"><label>Notes</label><textarea id="c-notes" rows="2" placeholder="Clinical notes, coordination details…"></textarea></div>
+    </div>
+
+    <!-- SERVICES -->
+    <div style="border-top:2px solid var(--border);padding-top:18px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+        <div><div style="font-family:var(--head);font-weight:800;font-size:15px;color:var(--ink)">Services Provided</div>
+        <div style="font-size:12px;color:var(--muted);font-weight:300;margin-top:2px">These become the line items on the client invoice</div></div>
+        <button class="btn btn-dark btn-sm" onclick="addSvcLine()">+ Add Service</button>
+      </div>
+      <div id="svc-wrap"></div>
+      <div class="totals-box">
+        <div class="tot-row"><span style="color:var(--muted)">Subtotal</span><span style="font-family:var(--mono);font-weight:700" id="tot-sub">€ 0.00</span></div>
+        <div class="tot-row"><span style="color:var(--muted);display:flex;align-items:center;gap:6px">VAT <input type="number" id="c-vat" value="0" style="width:44px;padding:3px 6px;font-size:12px;border:1px solid var(--border);border-radius:5px" oninput="calcTots()"> %</span><span style="font-family:var(--mono)" id="tot-vat">€ 0.00</span></div>
+        <div class="tot-row final"><span>Total to Invoice</span><span style="font-family:var(--mono)" id="tot-total">€ 0.00</span></div>
+      </div>
+    </div>
+    <div class="form-actions"><button class="btn btn-outline" onclick="closeM('m-case')">Cancel</button><button class="btn btn-dark" onclick="saveCase()">💾 Save Case</button></div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════ INVOICE MODAL ════════════ -->
+<div class="mover" id="m-ci">
+<div class="modal" style="max-width:660px">
+  <div class="modal-hd"><span class="modal-title" id="m-ci-t">New Invoice</span><button class="modal-close" onclick="closeM('m-ci')">✕</button></div>
+  <div class="modal-body">
+    <div style="background:var(--green3);border:1px solid var(--green2);border-radius:var(--rs);padding:11px 14px;margin-bottom:16px;font-size:13px;color:var(--green);font-weight:700;font-family:var(--head)">
+      ✓ Services from the case are pre-loaded as invoice line items below.
+    </div>
+    <div class="g2">
+      <div class="fg"><label>Invoice Number</label><input id="ci-num"></div>
+      <div class="fg"><label>Case Reference</label><input id="ci-case-disp" readonly></div>
+      <div class="fg"><label>Client</label><input id="ci-client-disp" readonly></div>
+      <div class="fg"><label>Currency</label><select id="ci-cur"><option>EUR</option><option>USD</option><option>GBP</option></select></div>
+      <div class="fg"><label>Issue Date</label><input type="date" id="ci-date"></div>
+      <div class="fg"><label>Due Date</label><input type="date" id="ci-due"></div>
+      <div class="fg"><label>Payment Status</label><select id="ci-status"><option>Draft</option><option>Sent</option><option>Paid</option><option>Overdue</option></select></div>
+      <div class="fg"><label>Date Paid</label><input type="date" id="ci-paid"></div>
+      <div class="fg fg2"><label>Notes / Payment Instructions</label><textarea id="ci-notes" rows="2" placeholder="Any additional notes for the client…"></textarea></div>
+    </div>
+    <div style="margin-top:16px;margin-bottom:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-family:var(--head)">Invoice Line Items</div>
+    <div class="inv-doc" id="ci-inv-preview"></div>
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="closeM('m-ci')">Cancel</button>
+      <button class="btn btn-outline" id="ci-outlook-btn" onclick="sendFromModal()" style="color:#0072c6;border-color:#0072c6;display:none">✉️ Save & Send via Outlook</button>
+      <button class="btn btn-dark" onclick="saveCI()">💾 Save Invoice</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════ PROVIDER INVOICE MODAL ════════════ -->
+<div class="mover" id="m-pi">
+<div class="modal" style="max-width:660px">
+  <div class="modal-hd"><span class="modal-title" id="m-pi-t">New Provider Invoice</span><button class="modal-close" onclick="closeM('m-pi')">✕</button></div>
+  <div class="modal-body">
+    <div class="ai-box">
+      <div class="ai-box-title">🤖 AI Invoice Scanner <span class="tag tp" style="font-size:10px">auto-fill</span></div>
+      <div class="ai-box-st" id="pi-ai-st">Upload the provider's invoice — AI reads it and fills all fields automatically.</div>
+      <div class="upload-zone" id="pi-uz" onclick="document.getElementById('pi-file').click()" ondrop="dropF(event,'pi')" ondragover="dzOn(event)" ondragleave="dzOff(event)">
+        <div class="uz-ico">🧾</div><div class="uz-t">Drop provider invoice here or click to browse</div>
+        <div class="uz-s">Hospital bills · Ambulance invoices · Pharmacy receipts · Any supplier PDF or image</div>
+      </div>
+      <input type="file" id="pi-file" style="display:none" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="selF(event,'pi')">
+      <div id="pi-fp" style="display:none">
+        <div class="doc-chip">🧾 <span id="pi-fn"></span>
+          <button class="btn btn-purple btn-xs" style="margin-left:auto" onclick="extractPI()">🤖 Auto-Fill Now</button>
+          <button class="btn btn-red btn-xs" onclick="clearF('pi')">✕</button>
+        </div>
+        <div id="pi-ap" class="ai-prev" style="display:none"></div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label>Our Ref #</label><input id="pi-num"></div>
+      <div class="fg"><label>Linked Case</label><select id="pi-case"><option value="">— No case link —</option></select></div>
+      <div class="fg"><label>Provider</label><select id="pi-prov"><option value="">— Select Provider —</option></select></div>
+      <div class="fg"><label>Category</label><select id="pi-cat"><option>Hospital/Medical</option><option>Air Ambulance</option><option>Ground Ambulance</option><option>Pharmacy</option><option>Hotel/Accommodation</option><option>Transport/Flights</option><option>Other</option></select></div>
+      <div class="fg"><label>Provider's Invoice # <span style="color:var(--purple);font-size:10px;font-weight:700">(from document)</span></label><input id="pi-pnum" placeholder="As shown on their invoice"></div>
+      <div class="fg"><label>Invoice Date</label><input type="date" id="pi-idate"></div>
+      <div class="fg"><label>Amount</label><input type="number" id="pi-amount" placeholder="0.00"></div>
+      <div class="fg"><label>Currency</label><select id="pi-cur"><option>EUR</option><option>USD</option><option>GBP</option><option>TND</option><option>TRY</option><option>CHF</option></select></div>
+      <div class="fg"><label>Payment Status</label><select id="pi-status"><option>Pending</option><option>Paid</option><option>Disputed</option></select></div>
+      <div class="fg"><label>Date Paid</label><input type="date" id="pi-paid"></div>
+      <div class="fg fg2"><label>Description / Notes</label><textarea id="pi-desc" rows="2"></textarea></div>
+    </div>
+    <div class="form-actions"><button class="btn btn-outline" onclick="closeM('m-pi')">Cancel</button><button class="btn btn-dark" onclick="savePI()">📥 Save Invoice</button></div>
+  </div>
+</div>
+</div>
+
+<!-- CLIENT / PROVIDER DIR MODALS -->
+<div class="mover" id="m-client">
+<div class="modal" style="max-width:500px">
+  <div class="modal-hd"><span class="modal-title" id="m-cl-t">New Client</span><button class="modal-close" onclick="closeM('m-client')">✕</button></div>
+  <div class="modal-body"><div class="g2">
+    <div class="fg fg2"><label>Client Name</label><input id="cl-name" placeholder="Individual or company name"></div>
+    <div class="fg"><label>Tax / ID No</label><input id="cl-taxid" placeholder="e.g. EL999768994"></div>
+    <div class="fg"><label>Country</label><input id="cl-country"></div>
+    <div class="fg fg2"><label>Address</label><input id="cl-address" placeholder="Street address"></div>
+    <div class="fg"><label>City</label><input id="cl-city" placeholder="City"></div>
+    <div class="fg"><label>Email</label><input type="email" id="cl-email"></div>
+    <div class="fg"><label>Phone</label><input id="cl-phone"></div>
+    <div class="fg"><label>Contact Person</label><input id="cl-person"></div>
+    <div class="fg fg2"><label>Notes</label><textarea id="cl-notes" rows="2"></textarea></div>
+  </div><div class="form-actions"><button class="btn btn-outline" onclick="closeM('m-client')">Cancel</button><button class="btn btn-dark" onclick="saveClient()">💾 Save</button></div></div>
+</div>
+</div>
+
+<div class="mover" id="m-prov">
+<div class="modal" style="max-width:500px">
+  <div class="modal-hd"><span class="modal-title" id="m-pv-t">New Provider</span><button class="modal-close" onclick="closeM('m-prov')">✕</button></div>
+  <div class="modal-body"><div class="g2">
+    <div class="fg fg2"><label>Provider Name</label><input id="pv-name" placeholder="Hospital / ambulance co. / supplier"></div>
+    <div class="fg"><label>Type</label><select id="pv-type"><option>Hospital/Clinic</option><option>Air Ambulance</option><option>Ground Ambulance</option><option>Pharmacy</option><option>Hotel</option><option>Transport</option><option>Other</option></select></div>
+    <div class="fg"><label>Country</label><input id="pv-country"></div>
+    <div class="fg"><label>Email</label><input type="email" id="pv-email"></div>
+    <div class="fg"><label>Phone</label><input id="pv-phone"></div>
+    <div class="fg"><label>Contact Person</label><input id="pv-person"></div>
+    <div class="fg fg2"><label>Notes</label><textarea id="pv-notes" rows="2"></textarea></div>
+  </div><div class="form-actions"><button class="btn btn-outline" onclick="closeM('m-prov')">Cancel</button><button class="btn btn-dark" onclick="saveProvider()">💾 Save</button></div></div>
+</div>
+</div>
+
+<!-- ════════════ PDF INVOICE PREVIEW MODAL ════════════ -->
+<div class="mover" id="m-pdf">
+<div class="modal" style="max-width:800px">
+  <div class="modal-hd">
+    <span class="modal-title">📄 Invoice Preview</span>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-xs" style="background:#0072c6;color:#fff;border:none;border-radius:var(--rs);padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);display:inline-flex;align-items:center;gap:5px" onclick="sendViaOutlook()">✉️ Send via Outlook</button>
+      <button class="btn btn-dark btn-sm" onclick="printInvoice()">🖨️ Print / Save PDF</button>
+      <button class="modal-close" onclick="closeM('m-pdf')">✕</button>
+    </div>
+  </div>
+  <div style="background:#fff7ed;border-bottom:1px solid #fed7aa;padding:10px 20px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:8px">
+    <span>💡</span>
+    <span><strong>Workflow:</strong> Click <strong>🖨️ Print / Save PDF</strong> → choose "Save as PDF" → then <strong>✉️ Send via Outlook</strong> → attach the saved PDF → send.</span>
+  </div>
+  <div class="modal-body" style="padding:0">
+    <div id="pdf-invoice-body" style="padding:28px"></div>
+  </div>
+</div>
+</div>
+
+<!-- PRINT STYLES — only apply when printing -->
+<style id="print-styles">
+@media print {
+  body > *:not(#print-root) { display: none !important; }
+  #print-root { display: block !important; }
+  @page { size: A4; margin: 18mm 16mm; }
+}
+</style>
+<div id="print-root" style="display:none"></div>
+
+
+<!-- FLOATING NEW CASE BUTTON -->
+<button id="fab-new-case" onclick="resetCase();openM('m-case')" style="
+  position:fixed;bottom:28px;right:28px;z-index:500;
+  background:var(--red);color:#fff;border:none;
+  border-radius:50px;padding:12px 20px;
+  font-family:var(--head);font-weight:800;font-size:13px;
+  letter-spacing:.2px;cursor:pointer;
+  box-shadow:0 6px 24px rgba(192,57,43,.45),0 2px 8px rgba(0,0,0,.2);
+  display:flex;align-items:center;gap:7px;
+  transition:all .18s;opacity:1;
+" onmouseenter="this.style.transform='translateY(-2px)'"
+   onmouseleave="this.style.transform=''">
+  <span style="font-size:18px;line-height:1">+</span> New Case
+</button>
+
+<!-- CONFIRM MODAL -->
+<div class="mover" id="m-confirm">
+<div class="modal" style="max-width:440px">
+  <div class="modal-hd">
+    <span class="modal-title" id="m-confirm-title">Confirm Delete</span>
+    <button class="modal-close" onclick="closeM('m-confirm')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:22px">
+      <div style="width:48px;height:48px;background:var(--red3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🗑️</div>
+      <div style="flex:1">
+        <div id="m-confirm-msg" style="font-size:14px;color:var(--ink);line-height:1.6;font-weight:400"></div>
+        <div style="font-size:12px;color:var(--red);margin-top:8px;font-weight:700;font-family:var(--head)">⚠ This cannot be undone.</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:9px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeM('m-confirm')" style="min-width:90px">Cancel</button>
+      <button class="btn btn-red" id="m-confirm-btn" style="min-width:120px">🗑️ Delete</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div id="tc"></div>
+<script>
+// ══════════════ CONSTANTS ══════════════
+const SVCS=['Air Ambulance','Ambulance Transfer','Medical Escort','Translation','Fees','Assistance'];
+const SVC_CLS={'Air Ambulance':'sv-air','Ambulance Transfer':'sv-amb','Medical Escort':'sv-esc','Translation':'sv-tr','Fees':'sv-fee','Assistance':'sv-ast'};
+const SVC_ICO={'Air Ambulance':'✈️','Ambulance Transfer':'🚑','Medical Escort':'👨‍⚕️','Translation':'🌐','Fees':'💳','Assistance':'🆘'};
+const CASE_STS=['New','In Progress','Pending','Completed','Closed'];
+const ST_COL={New:'#1e40af','In Progress':'#0d9488',Pending:'#92400e',Completed:'#15803d',Closed:'#6b7280'};
+
+// ══════════════ STATE ══════════════
+let DB={cases:[],cInvoices:[],pInvoices:[],clients:[],providers:[],
+  settings:{company:'AWAS',taxid:'',email:'',phone:'',addr:'',currency:'EUR',vat:0}};
+let FS={}; // file store
+let ed={case:null,ci:null,pi:null,cl:null,pv:null};
+let tmpFile={ci:null,pi:null};
+let svcLines=[];
+let curPage='dash',caseView='pipe',repMode='pl',detCaseId=null;
+let fCI={q:'',st:'',caseId:'',clId:''};
+let fPI={q:'',st:'',caseId:'',pvId:''};
+let fCT={q:'',st:''};
+let dirCQ='',dirPQ='',dirPTQ='';
+
+// ══════════════ PERSIST — Firebase Firestore ══════════════
+// Firebase config — uses your existing healthwatch-tpa project
+// Replace with your own config from Firebase Console → Project Settings
+const FB_CONFIG={
+  apiKey:"AIzaSyD-REPLACE-WITH-YOUR-KEY",
+  authDomain:"healthwatch-tpa.firebaseapp.com",
+  projectId:"healthwatch-tpa",
+  storageBucket:"healthwatch-tpa.appspot.com",
+  messagingSenderId:"REPLACE",
+  appId:"REPLACE"
+};
+
+let db_fs=null; // Firestore instance
+let FB_READY=false;
+let FB_USER=null;
+const FB_COL='awas_suite'; // Firestore collection
+
+// Init Firebase
+function initFirebase(){
+  try{
+    // Check SDK is actually loaded
+    if(typeof firebase==='undefined'||!firebase.firestore){
+      console.warn('Firebase SDK not loaded yet');
+      showSyncStatus('💾 Local only','amber');
+      return false;
+    }
+    if(firebase.apps.length){
+      // Already initialized — just get Firestore
+      db_fs=firebase.firestore();
+      FB_READY=true;
+      showSyncStatus('🔥 Firebase ready','green');
+      return true;
+    }
+    firebase.initializeApp(FB_CONFIG);
+    db_fs=firebase.firestore();
+    db_fs.enablePersistence({synchronizeTabs:true}).catch(e=>{
+      if(e.code!=='failed-precondition'&&e.code!=='unimplemented')console.warn('Persistence:',e);
+    });
+    FB_READY=true;
+    showSyncStatus('🔥 Firebase ready','green');
+    return true;
+  }catch(e){
+    console.warn('Firebase init failed:',e.message);
+    showSyncStatus('💾 Local only','amber');
+    return false;
+  }
+}
+
+function showSyncStatus(msg,color){
+  const el=document.getElementById('sync-status');
+  if(el){
+    const colors={green:'var(--green)',amber:'var(--amber)',red:'var(--red)',blue:'var(--blue)'};
+    el.textContent=msg;el.style.color=colors[color]||color;
+  }
+}
+
+// SAVE — writes entire DB to Firestore under a single doc per collection
+async function save(){
+  // Always save to localStorage as backup
+  localStorage.setItem('awas6',JSON.stringify(DB));
+  localStorage.setItem('awas6f',JSON.stringify(FS));
+  if(!FB_READY||!db_fs)return;
+  try{
+    showSyncStatus('⟳ Saving…','blue');
+    const batch=db_fs.batch();
+    const base=db_fs.collection(FB_COL);
+    // Store each collection as a single document with array field
+    batch.set(base.doc('cases'),{data:DB.cases,updated:Date.now()},{merge:true});
+    batch.set(base.doc('cInvoices'),{data:DB.cInvoices,updated:Date.now()},{merge:true});
+    batch.set(base.doc('pInvoices'),{data:DB.pInvoices,updated:Date.now()},{merge:true});
+    batch.set(base.doc('clients'),{data:DB.clients,updated:Date.now()},{merge:true});
+    batch.set(base.doc('providers'),{data:DB.providers,updated:Date.now()},{merge:true});
+    batch.set(base.doc('settings'),{data:DB.settings,updated:Date.now()},{merge:true});
+    // FS (file store) — stored separately, can be large
+    batch.set(base.doc('filestore'),{data:FS,updated:Date.now()},{merge:true});
+    await batch.commit();
+    showSyncStatus('✓ Synced','green');
+  }catch(e){
+    console.warn('Firebase save failed:',e.message);
+    showSyncStatus('⚠ Sync failed — saved locally','amber');
+  }
+}
+
+// LOAD — tries Firestore first, falls back to localStorage
+async function load(){
+  // First load from localStorage so UI is instant
+  const d=localStorage.getItem('awas6'),f=localStorage.getItem('awas6f');
+  if(d){try{DB=JSON.parse(d)}catch{}}
+  if(f){try{FS=JSON.parse(f)}catch{FS={}}}
+  if(!Object.keys(DB.cases||{}).length&&!(DB.cases||[]).length)seed();
+
+  // Then try to load from Firestore (more up to date)
+  if(!FB_READY||!db_fs)return;
+  try{
+    showSyncStatus('⟳ Loading from cloud…','blue');
+    const base=db_fs.collection(FB_COL);
+    const [cases,cInv,pInv,clients,providers,settings,fs]=await Promise.all([
+      base.doc('cases').get(),
+      base.doc('cInvoices').get(),
+      base.doc('pInvoices').get(),
+      base.doc('clients').get(),
+      base.doc('providers').get(),
+      base.doc('settings').get(),
+      base.doc('filestore').get(),
+    ]);
+    let fromCloud=false;
+    if(cases.exists&&cases.data().data){DB.cases=cases.data().data;fromCloud=true}
+    if(cInv.exists&&cInv.data().data){DB.cInvoices=cInv.data().data;fromCloud=true}
+    if(pInv.exists&&pInv.data().data){DB.pInvoices=pInv.data().data;fromCloud=true}
+    if(clients.exists&&clients.data().data){DB.clients=clients.data().data;fromCloud=true}
+    if(providers.exists&&providers.data().data){DB.providers=providers.data().data;fromCloud=true}
+    if(settings.exists&&settings.data().data){DB.settings={...DB.settings,...settings.data().data};fromCloud=true}
+    if(fs.exists&&fs.data().data){FS=fs.data().data}
+    if(fromCloud){
+      localStorage.setItem('awas6',JSON.stringify(DB));
+      localStorage.setItem('awas6f',JSON.stringify(FS));
+      showSyncStatus('✓ Loaded from cloud','green');
+      // Refresh UI with cloud data
+      renderPage(curPage);updBadges();checkOverdue();
+      loadSettingsUI();
+    }else{
+      showSyncStatus('✓ Synced','green');
+    }
+  }catch(e){
+    console.warn('Firebase load failed:',e.message);
+    showSyncStatus('💾 Offline — using local data','amber');
+  }
+}
+function seed(){
+  DB.clients=[
+    {id:'c1',name:'Gulf Assistance Co.',email:'ops@gulfassist.com',phone:'+971 4 123 4567',country:'UAE',person:'Ahmed Al-Rashid',notes:''},
+    {id:'c2',name:'Tello Juan',email:'jtello@email.com',phone:'+34 600 000 001',country:'Spain',person:'',notes:''},
+    {id:'c3',name:'Svensson Family',email:'mia@email.com',phone:'+46 70 123 4567',country:'Sweden',person:'Mia Svensson',notes:''},
+    {id:'c4',name:'Malta Insurance Ltd.',email:'claims@maltainsure.com',phone:'+356 21 000 000',country:'Malta',person:'Joseph Borg',notes:''},
+  ];
+  DB.providers=[
+    {id:'p1',name:'IASO Hospital Athens',type:'Hospital/Clinic',country:'Greece',email:'intl@iaso.gr',phone:'+30 210 618 4000',person:'Dr. Papadopoulos',notes:''},
+    {id:'p2',name:'Aeromedical Solutions',type:'Air Ambulance',country:'Germany',email:'ops@aeromedical.eu',phone:'+49 89 1234 567',person:'Thomas Müller',notes:'EURAMI'},
+    {id:'p3',name:'City Pharmacy Athens',type:'Pharmacy',country:'Greece',email:'',phone:'+30 210 000 111',person:'',notes:''},
+    {id:'p4',name:'Evangelismos Hospital',type:'Hospital/Clinic',country:'Greece',email:'info@evangelismos.gr',phone:'+30 213 204 1000',person:'Admin',notes:''},
+  ];
+  DB.cases=[
+    {id:'j1',ref:'AWAS-2026-001',client:'c1',date:'2026-05-01',svcDate:'2026-05-01',patient:'Micallef Clinton',nat:'Maltese',origin:'Tunis',dest:'Berlin',status:'Closed',notes:'Completed.',vat:0,
+      services:[{id:'s1',type:'Air Ambulance',desc:'Air ambulance flight Tunis → Berlin',qty:1,rate:8500,amount:8500},{id:'s2',type:'Medical Escort',desc:'Medical escort on board',qty:1,rate:600,amount:600}]},
+    {id:'j2',ref:'AWAS-2026-002',client:'c2',date:'2026-05-08',svcDate:'2026-05-08',patient:'Juan Tello',nat:'Spanish',origin:'Santorini',dest:'Athens',status:'Completed',notes:'',vat:0,
+      services:[{id:'s3',type:'Ambulance Transfer',desc:'Ground ambulance Santorini → Athens',qty:1,rate:1800,amount:1800},{id:'s4',type:'Assistance',desc:'Case coordination',qty:1,rate:400,amount:400}]},
+    {id:'j3',ref:'AWAS-2026-003',client:'c3',date:'2026-05-12',svcDate:'2026-05-14',patient:'Mia Svensson',nat:'Swedish',origin:'Athens',dest:'Stockholm',status:'In Progress',notes:'',vat:0,
+      services:[{id:'s5',type:'Medical Escort',desc:'Medical escort Athens → Stockholm',qty:1,rate:2400,amount:2400},{id:'s6',type:'Translation',desc:'Medical report translation',qty:2,rate:120,amount:240}]},
+    {id:'j4',ref:'AWAS-2026-004',client:'c4',date:'2026-05-15',svcDate:'2026-05-15',patient:'Robert Ashford',nat:'British',origin:'Thessaloniki',dest:'',status:'New',notes:'',vat:0,
+      services:[{id:'s7',type:'Assistance',desc:'Medical assistance coordination',qty:1,rate:350,amount:350},{id:'s8',type:'Fees',desc:'Administrative fees',qty:1,rate:150,amount:150}]},
+  ];
+  DB.cInvoices=[
+    {id:'ci1',num:'INV-2026-001',caseId:'j1',clId:'c1',date:'2026-05-03',due:'2026-06-02',total:9100,cur:'EUR',status:'Paid',paid:'2026-05-22',notes:''},
+    {id:'ci2',num:'INV-2026-002',caseId:'j2',clId:'c2',date:'2026-05-10',due:'2026-06-09',total:2200,cur:'EUR',status:'Sent',paid:'',notes:''},
+  ];
+  DB.pInvoices=[
+    {id:'pi1',num:'EXP-2026-001',caseId:'j1',pvId:'p2',cat:'Air Ambulance',pnum:'AMS-FL-2205',idate:'2026-05-02',amount:6200,cur:'EUR',status:'Paid',paid:'2026-05-25',desc:'Air ambulance flight'},
+    {id:'pi2',num:'EXP-2026-002',caseId:'j2',pvId:'p1',cat:'Hospital/Medical',pnum:'IASO-0887',idate:'2026-05-09',amount:4800,cur:'EUR',status:'Pending',paid:'',desc:'Cardiac stenting + ICU'},
+    {id:'pi3',num:'EXP-2026-003',caseId:'j3',pvId:'p3',cat:'Pharmacy',pnum:'PHARM-0234',idate:'2026-05-13',amount:320,cur:'EUR',status:'Pending',paid:'',desc:'Medication kit'},
+  ];
+  save();
+}
+
+// ══════════════ UTILS ══════════════
+const fmt=(n,c='EUR')=>{try{return new Intl.NumberFormat('el-GR',{style:'currency',currency:c,maximumFractionDigits:2}).format(n||0)}catch{return c+' '+Number(n||0).toFixed(2)}};
+const today=()=>new Date().toISOString().slice(0,10);
+const uid=()=>'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const cliN=id=>(DB.clients.find(x=>x.id===id)||{name:'—'}).name;
+const pvN=id=>(DB.providers.find(x=>x.id===id)||{name:'—'}).name;
+const cRef=id=>(DB.cases.find(x=>x.id===id)||{ref:'—'}).ref;
+function caseTots(cid){
+  const c=DB.cases.find(x=>x.id===cid)||{services:[],vat:0};
+  const sub=c.services.reduce((a,s)=>a+(s.amount||0),0);
+  const vatA=sub*(c.vat||0)/100;
+  const billed=sub+vatA;
+  const collected=DB.cInvoices.filter(i=>i.caseId===cid&&i.status==='Paid').reduce((a,i)=>a+(i.total||0),0);
+  const cost=DB.pInvoices.filter(i=>i.caseId===cid).reduce((a,i)=>a+(i.amount||0),0);
+  const paidOut=DB.pInvoices.filter(i=>i.caseId===cid&&i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
+  return{sub,vatA,billed,collected,cost,paidOut,outstanding:billed-collected,margin:collected-paidOut};
+}
+const sTag=t=>`<span class="tag ${SVC_CLS[t]||'tx'}">${SVC_ICO[t]||''} ${t}</span>`;
+const stTag=s=>{const m={New:'tn','In Progress':'tb',Pending:'ta',Completed:'tg',Closed:'tx',Draft:'tx',Sent:'tb',Paid:'tg',Overdue:'tr',Disputed:'tr'};return`<span class="tag ${m[s]||'tx'}">${s}</span>`};
+const payTag=(s,d)=>s==='Paid'?`<span class="tag tg">✓ Paid${d?' · '+d:''}</span>`:s==='Overdue'?`<span class="tag tr">⚠ Overdue</span>`:s==='Sent'?`<span class="tag tb">Sent · Awaiting</span>`:`<span class="tag tx">Draft</span>`;
+const expTag=(s,d)=>s==='Paid'?`<span class="tag tg">✓ Paid${d?' · '+d:''}</span>`:s==='Disputed'?`<span class="tag tr">⚠ Disputed</span>`:`<span class="tag ta">⏳ Pending</span>`;
+const docLink=id=>{const f=FS[id];return f?`<a href="${f.d}" download="${f.n}" style="font-size:12px;color:var(--blue);font-weight:700;text-decoration:none">📎 ${f.n.length>16?f.n.slice(0,13)+'…':f.n}</a>`:'<span style="color:var(--light);font-size:12px">—</span>'};
+
+// ══════════════ MODAL ══════════════
+const openM=id=>document.getElementById(id).classList.add('on');
+const closeM=id=>document.getElementById(id).classList.remove('on');
+window.addEventListener('click',e=>{if(e.target.classList.contains('mover'))e.target.classList.remove('on')});
+
+// ══════════════ TOAST ══════════════
+function toast(msg,type='ok'){
+  const el=document.createElement('div');el.className=`toast ${type}`;
+  el.innerHTML=`${type==='ok'?'✓':type==='err'?'✕':type==='ai'?'🤖':'⚠'} ${msg}`;
+  document.getElementById('tc').appendChild(el);setTimeout(()=>el.remove(),4000);
+}
+
+// ══════════════ SIDEBAR ══════════════
+function toggleSB(){document.getElementById('sb').classList.toggle('on');document.getElementById('sb-ov').classList.toggle('on')}
+function closeSB(){document.getElementById('sb').classList.remove('on');document.getElementById('sb-ov').classList.remove('on')}
+
+// ══════════════ CONFIRM & DELETE — defined early so always available ══════════════
+function confirm_(title,msg,onConfirm){
+  document.getElementById('m-confirm-title').textContent=title;
+  document.getElementById('m-confirm-msg').innerHTML=msg;
+  const btn=document.getElementById('m-confirm-btn');
+  const newBtn=btn.cloneNode(true); // remove old listeners
+  btn.parentNode.replaceChild(newBtn,btn);
+  newBtn.onclick=()=>{closeM('m-confirm');onConfirm()};
+  openM('m-confirm');
+}
+function delCase(id){
+  const c=DB.cases.find(x=>x.id===id);if(!c)return;
+  const ci=DB.cInvoices.filter(i=>i.caseId===id).length;
+  const pi=DB.pInvoices.filter(i=>i.caseId===id).length;
+  confirm_('Delete Case',
+    `Delete case <strong>${c.ref}</strong> — ${cliN(c.client)}?`+
+    (ci||pi?`<br><br><span style="color:var(--red)">Also deletes ${ci} client invoice${ci!==1?'s':''} and ${pi} provider invoice${pi!==1?'s':''} linked to this case.</span>`:''),
+    ()=>{
+      DB.cases=DB.cases.filter(x=>x.id!==id);
+      DB.cInvoices=DB.cInvoices.filter(x=>x.caseId!==id);
+      DB.pInvoices=DB.pInvoices.filter(x=>x.caseId!==id);
+      save();renderPipeline();renderCaseTbl();closeDet();renderDash();updBadges();
+      toast('Case deleted','warn');
+    });
+}
+function delCI(id){
+  const i=DB.cInvoices.find(x=>x.id===id);if(!i)return;
+  confirm_('Delete Client Invoice',
+    `Delete invoice <strong>${i.num}</strong> — <strong>${fmt(i.total,i.cur)}</strong> to ${cliN(i.clId)}?`,
+    ()=>{
+      DB.cInvoices=DB.cInvoices.filter(x=>x.id!==id);
+      delete FS[id];save();
+      if(detCaseId)openDet(detCaseId);else renderCIList();
+      renderDash();updBadges();toast('Invoice deleted','warn');
+    });
+}
+function delPI(id){
+  const i=DB.pInvoices.find(x=>x.id===id);if(!i)return;
+  confirm_('Delete Provider Invoice',
+    `Delete <strong>${i.num}</strong>${i.pnum?' (Prov.inv: '+i.pnum+')':''} — <strong>${fmt(i.amount,i.cur)}</strong> from ${pvN(i.pvId)||'provider'}?`,
+    ()=>{
+      DB.pInvoices=DB.pInvoices.filter(x=>x.id!==id);
+      delete FS[id];save();
+      if(detCaseId)openDet(detCaseId);else renderPIList();
+      renderDash();updBadges();toast('Provider invoice deleted','warn');
+    });
+}
+function delClient(id){
+  const c=DB.clients.find(x=>x.id===id);if(!c)return;
+  const cases=DB.cases.filter(x=>x.client===id).length;
+  confirm_('Delete Client',`Delete client <strong>${c.name}</strong>?`+
+    (cases?`<br><br><span style="color:var(--amber)">${cases} case(s) linked — cases will remain.</span>`:''),
+    ()=>{DB.clients=DB.clients.filter(x=>x.id!==id);save();renderDirC();toast('Client deleted','warn')});
+}
+function delProvider(id){
+  const p=DB.providers.find(x=>x.id===id);if(!p)return;
+  const inv=DB.pInvoices.filter(x=>x.pvId===id).length;
+  confirm_('Delete Provider',`Delete provider <strong>${p.name}</strong>?`+
+    (inv?`<br><br><span style="color:var(--amber)">${inv} invoice(s) linked — invoices will remain.</span>`:''),
+    ()=>{DB.providers=DB.providers.filter(x=>x.id!==id);save();renderDirP();toast('Provider deleted','warn')});
+}
+
+// ══════════════ NAVIGATION ══════════════
+const pgCfg={
+  dash:{t:'Dashboard',s:'AWAS — Business Overview',main:'+ New Case'},
+  cases:{t:'Cases',s:'Full case lifecycle — services, client invoices, provider invoices',main:'+ New Case'},
+  'client-inv':{t:'Invoices',s:'Invoices issued by AWAS to clients',main:'+ New Invoice'},
+  'prov-inv':{t:'Provider Invoices',s:'Invoices received by AWAS from providers',main:'+ New Invoice'},
+  reports:{t:'Reports',s:'Financial overview',main:null},
+  clients:{t:'Clients',s:'Individuals and companies AWAS serves',main:'+ New Client'},
+  providers:{t:'Providers',s:'Hospitals, ambulance companies, suppliers',main:'+ New Provider'},
+  settings:{t:'Settings',s:'System & company settings',main:null},
+};
+function go(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.sb-link').forEach(x=>x.classList.remove('on'));
+  document.getElementById('page-'+p).classList.add('on');
+  document.querySelectorAll('.sb-link').forEach(x=>{if((x.getAttribute('onclick')||'').includes("'"+p+"'"))x.classList.add('on')});
+  curPage=p;const c=pgCfg[p];
+  document.getElementById('pg-t').textContent=c.t;
+  document.getElementById('pg-s').textContent=c.s;
+  const mb=document.getElementById('tb-main'),sb=document.getElementById('tb-sec');
+  if(c.main){mb.style.display='';mb.textContent=c.main}else mb.style.display='none';
+  sb.style.display='none';
+  // FAB: hide when not on cases/dash, and always show when navigating to cases
+  const fab=document.getElementById('fab-new-case');
+  if(fab){
+    fab.style.display=(p==='cases'||p==='dash')?'flex':'none';
+    // When navigating away from cases, close the detail panel
+    if(p!=='cases'&&detCaseId){detCaseId=null;const w=document.getElementById('case-det-wrap');if(w)w.style.display='none';}
+  }
+  renderPage(p);closeSB();updBadges();
+}
+function mainAct(){
+  const m={dash:()=>{resetCase();openM('m-case')},cases:()=>{resetCase();openM('m-case')},
+    'client-inv':()=>{resetCI(null);openM('m-ci')},
+    'prov-inv':()=>{resetPI(null);openM('m-pi')},
+    clients:()=>{resetCl();openM('m-client')},
+    providers:()=>{resetPv();openM('m-prov')}};
+  if(m[curPage])m[curPage]();
+}
+function secAct(){}
+function renderPage(p){
+  if(p==='dash')renderDash();
+  if(p==='cases'){renderPipeline();renderCaseTbl()}
+  if(p==='client-inv'){renderCIList();popCIFilters()}
+  if(p==='prov-inv'){renderPIList();popPIFilters()}
+  if(p==='reports')renderRep(repMode);
+  if(p==='clients')renderDirC();
+  if(p==='providers')renderDirP();
+}
+// ══════════════ CONFIRM DELETE ══════════════
+function checkOverdue(){
+  const today_=today();
+  let changed=false;
+  DB.cInvoices.forEach(i=>{
+    if(i.status==='Sent'&&i.due&&i.due<today_){i.status='Overdue';changed=true}
+  });
+  if(changed){save();updBadges()}
+}
+
+function updBadges(){
+  const newCases=DB.cases.filter(c=>c.status==='New').length;
+  const overdue=DB.cInvoices.filter(i=>i.status==='Overdue').length;
+  const pendPI=DB.pInvoices.filter(i=>i.status==='Pending').length;
+  document.getElementById('bdg-cases').textContent=newCases||'';
+  document.getElementById('bdg-ci').textContent=overdue||'';
+  document.getElementById('bdg-pi').textContent=pendPI||'';
+  // Show alert count in topbar title area if on dashboard
+  const total=overdue+newCases;
+  document.title=total>0?`(${total}) AWAS Business Suite`:'AWAS Business Suite';
+}
+
+// ══════════════ DASHBOARD ══════════════
+function renderDash(){
+  const now=new Date();
+  const tb=DB.cInvoices.reduce((a,i)=>a+(i.total||0),0);
+  const tc=DB.cInvoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.total||0),0);
+  const te=DB.pInvoices.reduce((a,i)=>a+(i.amount||0),0);
+  const tp=DB.pInvoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
+  const ac=DB.cases.filter(c=>c.status!=='Closed').length;
+  const overdue=DB.cInvoices.filter(i=>i.status!=='Paid'&&i.due&&new Date(i.due)<now);
+  const overduePI=DB.pInvoices.filter(i=>i.status==='Pending');
+
+  // ALERT BANNER
+  const alerts=[];
+  if(overdue.length)alerts.push({color:'var(--red)',bg:'var(--red3)',ico:'⚠️',txt:`<strong>${overdue.length} client invoice${overdue.length>1?'s are':' is'} overdue</strong> — ${overdue.map(i=>i.num+' ('+fmt(i.total,i.cur)+')').join(', ')}`,act:`onclick="go('client-inv');setTimeout(()=>{fCISt('Overdue')},200)"`,btn:'View Overdue'});
+  if(overduePI.length)alerts.push({color:'var(--amber)',bg:'var(--amber3)',ico:'💳',txt:`<strong>${overduePI.length} provider invoice${overduePI.length>1?'s':''} pending payment</strong> — ${fmt(overduePI.reduce((a,i)=>a+(i.amount||0),0))} owed to providers`,act:`onclick="go('prov-inv')"`,btn:'View'});
+  const newCases=DB.cases.filter(c=>c.status==='New');
+  if(newCases.length)alerts.push({color:'var(--blue)',bg:'var(--blue3)',ico:'🚑',txt:`<strong>${newCases.length} new case${newCases.length>1?'s':''}</strong> waiting for action — ${newCases.map(c=>c.ref).join(', ')}`,act:`onclick="go('cases')"`,btn:'Open Cases'});
+  document.getElementById('dash-alerts').innerHTML=alerts.map(a=>`
+    <div style="background:${a.bg};border:1px solid ${a.color}30;border-left:4px solid ${a.color};border-radius:var(--rs);padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;font-size:13px">
+      <span style="font-size:18px;flex-shrink:0">${a.ico}</span>
+      <span style="flex:1;color:var(--ink)">${a.txt}</span>
+      <button class="btn btn-sm" style="background:${a.color};color:#fff;flex-shrink:0" ${a.act}>${a.btn}</button>
+    </div>`).join('');
+
+  // KPIs
+  document.getElementById('kpi-row').innerHTML=[
+    {lbl:'Total Billed',val:fmt(tb),sub:`${DB.cInvoices.filter(i=>i.status!=='Paid').length} unpaid · ${fmt(tb-tc)} outstanding`,ac:'var(--navy)'},
+    {lbl:'Collected',val:fmt(tc),sub:`${DB.cInvoices.filter(i=>i.status==='Paid').length} invoices paid`,ac:'var(--green)'},
+    {lbl:'Provider Costs',val:fmt(te),sub:`${fmt(te-tp)} pending · ${fmt(tp)} paid out`,ac:'var(--red)'},
+    {lbl:'Net Margin',val:fmt(tc-tp),sub:'Collected − paid to providers',ac:tc-tp>=0?'var(--green)':'var(--red)'},
+    {lbl:'Active Cases',val:ac,sub:`${DB.cases.filter(c=>c.status==='New').length} new · ${DB.cases.length} total`,ac:'var(--navy)'},
+  ].map(k=>`<div class="kpi"><div class="kpi-accent" style="background:${k.ac}"></div><div class="kpi-lbl">${k.lbl}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  // CHART — use real monthly data from cInvoices
+  const months=[];const rev=[];const exp=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date();d.setMonth(d.getMonth()-i);
+    const m=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0');
+    months.push(d.toLocaleString('en',{month:'short'}));
+    rev.push(DB.cInvoices.filter(inv=>inv.status==='Paid'&&inv.paid&&inv.paid.startsWith(m)).reduce((a,inv)=>a+(inv.total||0),0));
+    exp.push(DB.pInvoices.filter(inv=>inv.status==='Paid'&&inv.paid&&inv.paid.startsWith(m)).reduce((a,inv)=>a+(inv.amount||0),0));
+  }
+  const maxV=Math.max(...rev,...exp,1)*1.15;
+  document.getElementById('d-chart').innerHTML=months.map((m,i)=>`
+    <div style="flex:1;display:flex;flex-direction:column-reverse;gap:2px;position:relative;cursor:pointer" title="${m}: Revenue ${fmt(rev[i])} / Costs ${fmt(exp[i])}">
+      <div style="height:${(rev[i]/maxV*100).toFixed(0)}%;background:var(--ink);border-radius:5px 5px 0 0;min-height:${rev[i]>0?3:0}px">
+        <div style="position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:9.5px;color:var(--muted);white-space:nowrap;font-family:var(--head);font-weight:700">${m}</div>
+      </div>
+      ${exp[i]>0?`<div style="height:${(exp[i]/maxV*100).toFixed(0)}%;background:rgba(192,57,43,.45);border-radius:5px 5px 0 0;min-height:3px"></div>`:''}
+    </div>`).join('');
+
+  // UNPAID CLIENT INVOICES — sorted by most overdue first
+  const unCI=DB.cInvoices.filter(i=>i.status!=='Paid').map(i=>({...i,daysOver:i.due?Math.floor((now-new Date(i.due))/864e5):0})).sort((a,b)=>b.daysOver-a.daysOver);
+  document.getElementById('d-ci').innerHTML=unCI.length?unCI.slice(0,5).map(i=>`
+    <div style="display:flex;align-items:center;padding:10px 18px;border-bottom:1px solid #f3f4f6;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-family:var(--head);font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cliN(i.clId)}</div>
+        <div style="font-size:11.5px;color:var(--muted)">${i.num} · ${cRef(i.caseId)} · Due ${i.due||'—'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:var(--head);font-weight:800;font-size:13px">${fmt(i.total,i.cur)}</div>
+        ${i.daysOver>0?`<div style="font-size:11px;color:var(--red);font-weight:700">+${i.daysOver}d overdue</div>`:payTag(i.status,i.paid)}
+      </div>
+      <button class="btn btn-green btn-xs" onclick="qPayCI('${i.id}')" title="Mark Paid">✓</button>
+      <button class="btn btn-outline btn-xs" onclick="openPDFInvoice('${i.id}')" title="PDF + Send">🖨️</button>
+    </div>`).join('')+
+    (unCI.length>5?`<div style="padding:10px 18px;font-size:12px;color:var(--muted);text-align:center;cursor:pointer" onclick="go('client-inv')">+${unCI.length-5} more — view all</div>`:'')
+    :`<div class="empty" style="padding:24px"><div class="empty-ico">🎉</div><div class="empty-t">All paid up!</div></div>`;
+
+  // PENDING PROVIDER INVOICES
+  const penPI=DB.pInvoices.filter(i=>i.status==='Pending');
+  document.getElementById('d-pi').innerHTML=penPI.length?penPI.slice(0,5).map(i=>`
+    <div style="display:flex;align-items:center;padding:10px 18px;border-bottom:1px solid #f3f4f6;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-family:var(--head);font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pvN(i.pvId)||'Unknown provider'}</div>
+        <div style="font-size:11.5px;color:var(--muted)">${i.num}${i.pnum?' · Prov#'+i.pnum:''} · ${cRef(i.caseId)}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:var(--head);font-weight:800;font-size:13px">${fmt(i.amount,i.cur)}</div>
+        ${expTag(i.status,i.paid)}
+      </div>
+      <button class="btn btn-green btn-xs" onclick="qPayPI('${i.id}')" title="Mark Paid">✓</button>
+    </div>`).join('')+
+    (penPI.length>5?`<div style="padding:10px 18px;font-size:12px;color:var(--muted);text-align:center;cursor:pointer" onclick="go('prov-inv')">+${penPI.length-5} more — view all</div>`:'')
+    :`<div class="empty" style="padding:24px"><div class="empty-ico">✓</div><div class="empty-t">No pending payments</div></div>`;
+
+  // ACTIVE CASES
+  const active=DB.cases.filter(c=>c.status!=='Closed').sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('d-cases').innerHTML=active.length?active.slice(0,6).map(c=>{
+    const t=caseTots(c.id);
+    const hasUnpaid=DB.cInvoices.some(i=>i.caseId===c.id&&i.status!=='Paid');
+    return`<div style="display:flex;align-items:center;padding:10px 18px;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .12s;gap:10px" onclick="go('cases');setTimeout(()=>openDet('${c.id}'),200)" onmouseenter="this.style.background='#fafbff'" onmouseleave="this.style.background=''">
+      <div style="flex:1;min-width:0">
+        <div style="font-family:var(--head);font-weight:800;font-size:13px">${cliN(c.client)} <span class="td-m" style="font-weight:400">${c.ref}</span></div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:1px">${c.services.map(s=>sTag(s.type)).join(' ')} ${c.extref?'· '+c.extref:''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:var(--head);font-weight:800;font-size:13px">${fmt(t.billed)}</div>
+        <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:3px">${stTag(c.status)}${hasUnpaid?`<span class="tag tr" style="font-size:10px">Unpaid</span>`:''}</div>
+      </div>
+    </div>`;}).join(''):`<div class="empty"><div class="empty-ico">🚑</div><div class="empty-t">No active cases</div><button class="btn btn-dark btn-sm" style="margin-top:10px" onclick="resetCase();openM('m-case')">+ New Case</button></div>`;
+
+  ['d2a','d2b'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.gridTemplateColumns=window.innerWidth<700?'1fr':'1fr 1fr'});
+}
+
+// ══════════════ GLOBAL SEARCH ══════════════
+function globalSearch(q){
+  const el=document.getElementById('search-results');
+  if(!q||q.length<2){el.style.display='none';return}
+  const ql=q.toLowerCase();
+  const results=[];
+  DB.cases.filter(c=>(c.ref+cliN(c.client)+c.patient+c.extref+(c.services||[]).map(s=>s.type).join('')).toLowerCase().includes(ql))
+    .slice(0,4).forEach(c=>{const t=caseTots(c.id);results.push({ico:'🚑',label:c.ref+' — '+cliN(c.client),sub:c.patient+(c.extref?' · '+c.extref:''),right:fmt(t.billed),fn:`go('cases');setTimeout(()=>openDet('${c.id}'),200);document.getElementById('global-search').value='';document.getElementById('search-results').style.display='none'`})});
+  DB.cInvoices.filter(i=>(i.num+cliN(i.clId)+cRef(i.caseId)).toLowerCase().includes(ql))
+    .slice(0,3).forEach(i=>results.push({ico:'📤',label:i.num+' — '+cliN(i.clId),sub:cRef(i.caseId)+' · '+i.date,right:fmt(i.total,i.cur)+' · '+i.status,fn:`go('client-inv');setTimeout(()=>{fCIq('${i.num}')},200);document.getElementById('global-search').value='';document.getElementById('search-results').style.display='none'`}));
+  DB.pInvoices.filter(i=>(i.num+(i.pnum||'')+pvN(i.pvId)+cRef(i.caseId)).toLowerCase().includes(ql))
+    .slice(0,3).forEach(i=>results.push({ico:'📥',label:(i.pnum||i.num)+' — '+pvN(i.pvId),sub:i.cat+' · '+cRef(i.caseId),right:fmt(i.amount,i.cur)+' · '+i.status,fn:`go('prov-inv');document.getElementById('global-search').value='';document.getElementById('search-results').style.display='none'`}));
+  DB.clients.filter(c=>(c.name+(c.taxId||'')+c.country).toLowerCase().includes(ql))
+    .slice(0,2).forEach(c=>results.push({ico:'👤',label:c.name,sub:c.country||'',right:'',fn:`go('clients');document.getElementById('global-search').value='';document.getElementById('search-results').style.display='none'`}));
+  if(!results.length){el.innerHTML=`<div style="padding:14px 18px;font-size:13px;color:var(--muted)">No results for "${q}"</div>`;el.style.display='block';return}
+  el.innerHTML=results.map(r=>`<div style="display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer;gap:10px" onclick="${r.fn}" onmouseenter="this.style.background='#f7f9ff'" onmouseleave="this.style.background=''">
+    <span style="font-size:16px;flex-shrink:0">${r.ico}</span>
+    <div style="flex:1"><div style="font-weight:700;font-size:13px;font-family:var(--head)">${r.label}</div><div style="font-size:11.5px;color:var(--muted)">${r.sub}</div></div>
+    <div style="font-size:12px;color:var(--muted);text-align:right;flex-shrink:0">${r.right}</div>
+  </div>`).join('');
+  el.style.display='block';
+}
+document.addEventListener('click',e=>{if(!e.target.closest('#global-search')&&!e.target.closest('#search-results')){const el=document.getElementById('search-results');if(el)el.style.display='none'}});
+
+// ══════════════ AUTO INVOICE NUMBER ══════════════
+function nextInvNum(){
+  const nums=DB.cInvoices.map(i=>parseInt((i.num||'').replace(/\D/g,''))||0);
+  const next=(nums.length?Math.max(...nums):0)+1;
+  return`INV-${next.toString().padStart(3,'0')}`;
+}
+function nextExpNum(){
+  const nums=DB.pInvoices.map(i=>parseInt((i.num||'').replace(/\D/g,''))||0);
+  const next=(nums.length?Math.max(...nums):0)+1;
+  return`EXP-${next.toString().padStart(3,'0')}`;
+}
+function addSvcLine(data){
+  const id=uid();
+  svcLines.push(data||{id,type:'Air Ambulance',desc:'',qty:1,rate:0,amount:0});
+  renderSvcLines();
+}
+function rmSvcLine(id){svcLines=svcLines.filter(s=>s.id!==id);renderSvcLines()}
+function renderSvcLines(){
+  const w=document.getElementById('svc-wrap');
+  if(!svcLines.length){
+    w.innerHTML=`<div style="text-align:center;padding:22px;border:2px dashed var(--border2);border-radius:var(--rs);color:var(--muted);font-size:13px;font-weight:300;margin-bottom:10px">No services yet — click <strong>+ Add Service</strong> above</div>`;
+    calcTots();return;
+  }
+  w.innerHTML=svcLines.map(s=>`
+    <div class="svc-line-item">
+      <button class="sli-remove" onclick="rmSvcLine('${s.id}')">✕</button>
+      <div class="g3" style="gap:10px;padding-right:30px">
+        <div class="fg"><label>Service Type</label>
+          <select onchange="updSvc('${s.id}','type',this.value)">
+            ${SVCS.map(v=>`<option value="${v}" ${v===s.type?'selected':''}>${SVC_ICO[v]} ${v}</option>`).join('')}
+          </select></div>
+        <div class="fg"><label>Qty</label><input type="number" value="${s.qty}" min="0.5" step="0.5" oninput="updSvc('${s.id}','qty',this.value)"></div>
+        <div class="fg"><label>Rate (${DB.settings.currency||'EUR'})</label><input type="number" value="${s.rate}" step="0.01" oninput="updSvc('${s.id}','rate',this.value)"></div>
+        <div class="fg" style="grid-column:span 2"><label>Description</label><input type="text" value="${s.desc}" placeholder="Details of the service provided…" oninput="updSvc('${s.id}','desc',this.value)"></div>
+        <div class="fg"><label>Amount</label><input readonly id="sl-${s.id}" value="${Number(s.amount).toFixed(2)}" style="font-weight:700;color:var(--ink)"></div>
+      </div>
+    </div>`).join('');
+  calcTots();
+}
+function updSvc(id,f,v){
+  const s=svcLines.find(x=>x.id===id);if(!s)return;
+  if(f==='qty')s.qty=parseFloat(v)||0;
+  else if(f==='rate')s.rate=parseFloat(v)||0;
+  else s[f]=v;
+  s.amount=+(s.qty*s.rate).toFixed(2);
+  const el=document.getElementById('sl-'+id);if(el)el.value=s.amount.toFixed(2);
+  calcTots();
+}
+function calcTots(){
+  const sub=svcLines.reduce((a,s)=>a+(s.amount||0),0);
+  const vat=parseFloat(document.getElementById('c-vat')?.value)||0;
+  const vatA=sub*vat/100,tot=sub+vatA;
+  const cur=DB.settings.currency||'EUR';
+  ['tot-sub','tot-vat','tot-total'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=fmt([sub,vatA,tot][i],cur)});
+}
+
+// ══════════════ CASE CRUD ══════════════
+function swCaseView(mode,btn){
+  caseView=mode;
+  document.querySelectorAll('#case-tabs .tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  document.getElementById('cv-pipe').style.display=mode==='pipe'?'block':'none';
+  document.getElementById('cv-tbl').style.display=mode==='tbl'?'block':'none';
+}
+function renderPipeline(){
+  const board=document.getElementById('pipeline');
+  board.style.cssText='display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;align-items:flex-start;width:100%;-webkit-overflow-scrolling:touch';
+  board.innerHTML=CASE_STS.map(s=>{
+    const cases=DB.cases.filter(c=>c.status===s);
+    return`<div style="flex:0 0 230px;min-width:230px;background:#f1f3f7;border-radius:12px;padding:12px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;font-family:var(--head);color:${ST_COL[s]}">${s}</span>
+        <span style="background:#fff;color:var(--ink);font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;border:1px solid var(--border);font-family:var(--mono)">${cases.length}</span>
+      </div>
+      ${cases.length?cases.map(c=>{const t=caseTots(c.id);return`<div style="background:#fff;border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid var(--border);cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)" onclick="openDet('${c.id}')" onmouseenter="this.style.borderColor='var(--ink)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.borderColor='var(--border)';this.style.transform=''">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:10px;font-weight:700;color:var(--muted);font-family:var(--mono)">${c.ref}</span>
+          <div style="display:flex;gap:3px" onclick="event.stopPropagation()">
+            <button onclick="editCase('${c.id}')" title="Edit" style="background:transparent;border:1px solid var(--border);border-radius:5px;padding:2px 6px;cursor:pointer;font-size:11px;color:var(--muted)">✏️</button>
+            <button onclick="delCase('${c.id}')" title="Delete" style="background:var(--red3);border:1px solid var(--red);border-radius:5px;padding:2px 6px;cursor:pointer;font-size:11px;color:var(--red)">🗑️</button>
+          </div>
+        </div>
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);font-family:var(--head);margin-bottom:5px;line-height:1.3">${cliN(c.client)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">${c.services.map(sv=>sTag(sv.type)).join('')}</div>
+        ${c.patient?`<div style="font-size:11px;color:var(--muted);margin-bottom:4px">👤 ${c.patient}${c.nat?' · '+c.nat:''}</div>`:''}
+        ${c.extref?`<div style="font-size:11px;color:var(--muted);margin-bottom:4px">📋 ${c.extref}</div>`:''}
+        ${c.origin||c.dest?`<div style="font-size:11px;color:var(--muted);margin-bottom:4px">📍 ${c.origin||''}${c.dest?' → '+c.dest:''}</div>`:''}
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
+          <div><div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;font-family:var(--head);margin-bottom:2px">Billed</div><div style="font-size:12px;font-weight:800;font-family:var(--mono);color:var(--navy)">${fmt(t.billed)}</div></div>
+          <div><div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;font-family:var(--head);margin-bottom:2px">Cost</div><div style="font-size:12px;font-weight:800;font-family:var(--mono);color:var(--red)">${fmt(t.cost)}</div></div>
+          <div><div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;font-family:var(--head);margin-bottom:2px">Margin</div><div style="font-size:12px;font-weight:800;font-family:var(--mono);color:${t.margin>=0?'var(--green)':'var(--red)'}">${fmt(t.margin)}</div></div>
+        </div>
+      </div>`;}).join(''):`<div style="padding:20px;text-align:center;font-size:12px;color:var(--light);font-weight:300;border:2px dashed var(--border);border-radius:8px">Empty</div>`}
+    </div>`;}).join('');
+}
+function renderCaseTbl(){
+  const rows=DB.cases.filter(c=>{
+    const s=(c.ref+cliN(c.client)+c.patient+(c.services||[]).map(x=>x.type).join('')).toLowerCase();
+    return(!fCT.q||s.includes(fCT.q))&&(!fCT.st||c.status===fCT.st);
+  });
+  document.getElementById('case-tbody').innerHTML=rows.length?rows.map(c=>{
+    const t=caseTots(c.id);
+    return`<tr>
+      <td><span class="td-m" style="cursor:pointer;text-decoration:underline" onclick="openDet('${c.id}')">${c.ref}</span></td>
+      <td class="td-b">${cliN(c.client)}</td>
+      <td>${(c.services||[]).map(s=>sTag(s.type)).join(' ')}</td>
+      <td>${c.date}</td>
+      <td style="font-family:var(--mono)">${fmt(t.billed)}</td>
+      <td style="font-family:var(--mono);color:var(--green);font-weight:700">${fmt(t.collected)}</td>
+      <td style="font-family:var(--mono)">${fmt(t.cost)}</td>
+      <td style="font-family:var(--mono);font-weight:700;color:${t.margin>=0?'var(--green)':'var(--red)'}">${fmt(t.margin)}</td>
+      <td>${stTag(c.status)}</td>
+      <td><div class="td-acts">
+        <button class="btn btn-outline btn-xs" onclick="openDet('${c.id}')">Open</button>
+        <button class="btn btn-outline btn-xs" onclick="editCase('${c.id}')">Edit</button>
+        <button class="btn btn-red btn-xs" onclick="delCase('${c.id}')">✕</button>
+      </div></td>
+    </tr>`;}).join(''):`<tr><td colspan="10"><div class="empty"><div class="empty-ico">🚑</div><div class="empty-t">No cases found</div></div></td></tr>`;
+}
+function fCaseTbl(v){fCT.q=v.toLowerCase();renderCaseTbl()}
+function fCaseSt(v){fCT.st=v;renderCaseTbl()}
+
+// ══════════════ CASE DETAIL with STEP FLOW ══════════════
+function openDet(cid){
+  detCaseId=cid;
+  const c=DB.cases.find(x=>x.id===cid);if(!c)return;
+  const t=caseTots(cid);
+  const cis=DB.cInvoices.filter(i=>i.caseId===cid);
+  const pis=DB.pInvoices.filter(i=>i.caseId===cid);
+  const cur=DB.settings.currency||'EUR';
+  const hasCInv=cis.length>0;
+  const hasPInv=pis.length>0;
+
+  // Build invoice doc HTML
+  const invDocHTML=()=>{
+    const sub=c.services.reduce((a,s)=>a+(s.amount||0),0);
+    const vatA=sub*(c.vat||0)/100;
+    const tot=sub+vatA;
+    return`<div class="inv-doc">
+      <div class="inv-doc-hd"><div class="inv-doc-hd-left">INVOICE — ${cliN(c.client)}</div><div class="inv-doc-hd-right">${c.ref} · ${c.svcDate||c.date}</div></div>
+      ${c.services.map(s=>`<div class="inv-line">
+        <div style="flex:1"><div class="inv-line-name">${SVC_ICO[s.type]} ${s.type}</div><div class="inv-line-desc">${s.desc||''} · Qty ${s.qty} × ${fmt(s.rate,cur)}</div></div>
+        <div class="inv-line-amt">${fmt(s.amount,cur)}</div>
+      </div>`).join('')}
+      <div class="inv-totals">
+        <div class="inv-tr"><span style="color:var(--muted)">Subtotal</span><span style="font-family:var(--mono)">${fmt(sub,cur)}</span></div>
+        ${c.vat?`<div class="inv-tr"><span style="color:var(--muted)">VAT ${c.vat}%</span><span style="font-family:var(--mono)">${fmt(vatA,cur)}</span></div>`:''}
+        <div class="inv-tr final"><span>Total</span><span style="font-family:var(--mono)">${fmt(sub+vatA,cur)}</span></div>
+      </div>
+    </div>`;
+  };
+
+  document.getElementById('case-det').innerHTML=`
+    <div class="cd-hdr">
+      <div class="cd-ref">${c.ref} <span style="opacity:.4">·</span> ${c.date} ${stTag(c.status)}</div>
+      <div class="cd-name">${cliN(c.client)}</div>
+      <div class="cd-chips">
+        ${c.services.map(s=>sTag(s.type)).join('')}
+        ${c.patient?`<span class="tag tx">👤 ${c.patient}${c.nat?' · '+c.nat:''}</span>`:''}
+        ${c.origin||c.dest?`<span class="tag tx">📍 ${c.origin||''}${c.dest?' → '+c.dest:''}</span>`:''}
+      </div>
+    </div>
+
+    <!-- FIN STRIP -->
+    <div class="fin-strip">
+      <div class="fin-cell"><div class="fin-lbl">Billed</div><div class="fin-val">${fmt(t.billed)}</div></div>
+      <div class="fin-cell"><div class="fin-lbl">Collected</div><div class="fin-val gn">${fmt(t.collected)}</div></div>
+      <div class="fin-cell"><div class="fin-lbl">Outstanding</div><div class="fin-val ${t.outstanding>0?'rd':''}">${fmt(t.outstanding)}</div></div>
+      <div class="fin-cell"><div class="fin-lbl">Provider Cost</div><div class="fin-val rd">${fmt(t.cost)}</div></div>
+      <div class="fin-cell"><div class="fin-lbl">Paid Out</div><div class="fin-val am">${fmt(t.paidOut)}</div></div>
+      <div class="fin-cell"><div class="fin-lbl">Margin</div><div class="fin-val ${t.margin>=0?'gn':'rd'}">${fmt(t.margin)}</div></div>
+    </div>
+
+    <!-- STEP FLOW TABS -->
+    <div class="step-flow">
+      <div class="step ${true?'done':''} active-step" id="sp-1" onclick="showStep(1)">
+        <div class="step-num">✓</div>
+        <div class="step-info"><div class="step-label">1. Services</div><div class="step-desc">${c.services.length} service(s)</div></div>
+      </div>
+      <div class="step ${hasCInv?'done':''}" id="sp-2" onclick="showStep(2)">
+        <div class="step-num" style="${hasCInv?'':'background:transparent'}">${hasCInv?'✓':'2'}</div>
+        <div class="step-info"><div class="step-label">2. Client Invoice</div><div class="step-desc">${hasCInv?cis.length+' issued':'Not yet issued'}</div></div>
+      </div>
+      <div class="step ${hasPInv?'done':''}" id="sp-3" onclick="showStep(3)">
+        <div class="step-num" style="${hasPInv?'':'background:transparent'}">${hasPInv?'✓':'3'}</div>
+        <div class="step-info"><div class="step-label">3. Provider Invoices</div><div class="step-desc">${hasPInv?pis.length+' received':'None added'}</div></div>
+      </div>
+    </div>
+
+    <!-- STEP 1: SERVICES -->
+    <div class="step-panel on" id="sp-body-1">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div><div style="font-family:var(--head);font-weight:800;font-size:14px">Services Provided</div>
+        <div style="font-size:12px;color:var(--muted);font-weight:300">These are the line items on the client invoice</div></div>
+        <button class="btn btn-outline btn-sm" onclick="editCase('${cid}')">✏️ Edit Services</button>
+      </div>
+      ${invDocHTML()}
+      <div style="margin-top:14px;display:flex;justify-content:flex-end">
+        <button class="btn btn-dark" onclick="showStep(2)">Next: Issue Client Invoice →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: CLIENT INVOICE -->
+    <div class="step-panel" id="sp-body-2">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div><div style="font-family:var(--head);font-weight:800;font-size:14px">Client Invoice</div>
+        <div style="font-size:12px;color:var(--muted);font-weight:300">Invoice issued by AWAS to ${cliN(c.client)}</div></div>
+        <button class="btn btn-dark btn-sm" onclick="openCIForCase('${cid}')">+ Issue Invoice</button>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+        ${cis.length?cis.map(i=>`<div class="pi-row">
+          <div class="pi-row-main">
+            <div class="pi-row-ref">${i.num}${FS[i.id]?' · 📎 '+FS[i.id].n:''}</div>
+            <div class="pi-row-name">${fmt(i.total,i.cur)} — ${cliN(i.clId)}</div>
+            <div class="pi-row-meta">Issued ${i.date} · Due ${i.due}${i.notes?' · '+i.notes:''}</div>
+          </div>
+          <div class="pi-row-right"><div class="pi-row-amt">${fmt(i.total,i.cur)}</div>${payTag(i.status,i.paid)}</div>
+          <div class="pi-row-btns">
+            <button class="btn btn-dark btn-xs" onclick="openPDFInvoice('${i.id}')">🖨️ PDF</button>
+            <button style="background:#0072c6;color:#fff;border:none;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font)" onclick="sendInvoiceOutlook('${i.id}')">✉️ Send</button>
+            ${i.status!=='Paid'?`<button class="pay-btn do-pay" onclick="qPayCI('${i.id}')">✓ Paid</button>`:`<button class="pay-btn do-unpay" onclick="qUnCI('${i.id}')">Unpaid</button>`}
+            <button class="btn btn-outline btn-xs" onclick="editCI('${i.id}')">Edit</button>
+            <button class="btn btn-red btn-xs" onclick="delCI('${i.id}')">🗑️</button>
+          </div></div>`).join(''):`<div class="empty" style="padding:28px">
+          <div class="empty-ico">📤</div>
+          <div class="empty-t">No invoice issued yet</div>
+          <div class="empty-s" style="margin-bottom:14px">Click the button above to issue the client invoice.<br>Services are pre-loaded automatically.</div>
+          <button class="btn btn-dark" onclick="openCIForCase('${cid}')">+ Issue Invoice to ${cliN(c.client)}</button>
+        </div>`}
+      </div>
+      <div style="margin-top:14px;display:flex;justify-content:space-between">
+        <button class="btn btn-ghost btn-sm" onclick="showStep(1)">← Back</button>
+        <button class="btn btn-dark" onclick="showStep(3)">Next: Add Provider Invoices →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: PROVIDER INVOICES -->
+    <div class="step-panel" id="sp-body-3">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div><div style="font-family:var(--head);font-weight:800;font-size:14px">Provider Invoices</div>
+        <div style="font-size:12px;color:var(--muted);font-weight:300">Invoices received by AWAS from hospitals, ambulance cos, pharmacies…</div></div>
+        <button class="btn btn-red btn-sm" onclick="openPIForCase('${cid}')">+ Add Provider Invoice</button>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+        ${pis.length?pis.map(i=>`<div class="pi-row">
+          <div class="pi-row-main">
+            <div class="pi-row-ref">${i.num}${i.pnum?` · <strong>Prov. Invoice #${i.pnum}</strong>`:''}</div>
+            <div class="pi-row-name">${pvN(i.pvId)} <span class="tag tx" style="font-size:10px">${i.cat}</span></div>
+            <div class="pi-row-meta">Invoice date: ${i.idate||'—'}${FS[i.id]?' · 📎 '+FS[i.id].n:''}${i.desc?' · '+i.desc:''}</div>
+          </div>
+          <div class="pi-row-right"><div class="pi-row-amt">${fmt(i.amount,i.cur)}</div>${expTag(i.status,i.paid)}</div>
+          <div class="pi-row-btns">
+            ${i.status!=='Paid'?`<button class="pay-btn do-pay" onclick="qPayPI('${i.id}')">✓ Mark Paid</button>`:`<button class="pay-btn do-unpay" onclick="qUnPI('${i.id}')">Mark Unpaid</button>`}
+            <button class="btn btn-outline btn-xs" onclick="editPI('${i.id}')">Edit</button>
+            <button class="btn btn-red btn-xs" onclick="delPI('${i.id}')">🗑️</button>
+          </div></div>`).join(''):`<div class="empty" style="padding:28px">
+          <div class="empty-ico">📥</div>
+          <div class="empty-t">No provider invoices yet</div>
+          <div class="empty-s" style="margin-bottom:14px">Upload a provider's invoice PDF — AI will read it and fill all fields automatically.</div>
+          <button class="btn btn-dark" onclick="openPIForCase('${cid}')">+ Add Provider Invoice</button>
+        </div>`}
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:space-between">
+        <button class="btn btn-ghost btn-sm" onclick="showStep(2)">← Back</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="editCase('${cid}')">✏️ Edit Case</button>
+          <button class="btn btn-red btn-sm" onclick="delCase('${cid}')">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('case-det-wrap').style.display='block';
+  document.getElementById('case-det-wrap').scrollIntoView({behavior:'smooth'});
+  const fab=document.getElementById('fab-new-case');
+  if(fab)fab.style.display='none';
+  showStep(1);
+}
+
+function showStep(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('sp-'+i)?.classList.remove('active-step');
+    const p=document.getElementById('sp-body-'+i);if(p)p.classList.remove('on');
+  });
+  document.getElementById('sp-'+n)?.classList.add('active-step');
+  const body=document.getElementById('sp-body-'+n);if(body)body.classList.add('on');
+}
+
+function closeDet(){
+  document.getElementById('case-det-wrap').style.display='none';
+  detCaseId=null;
+  const fab=document.getElementById('fab-new-case');
+  if(fab)fab.style.display='flex';
+}
+function qPayCI(id){const i=DB.cInvoices.find(x=>x.id===id);if(i){i.status='Paid';i.paid=today();save();openDet(detCaseId);renderDash();toast('Invoice marked paid')}}
+function qUnCI(id){const i=DB.cInvoices.find(x=>x.id===id);if(i){i.status='Sent';i.paid='';save();openDet(detCaseId);renderDash();toast('Marked unpaid','warn')}}
+function qPayPI(id){const i=DB.pInvoices.find(x=>x.id===id);if(i){i.status='Paid';i.paid=today();save();openDet(detCaseId);renderDash();toast('Provider invoice paid')}}
+function qUnPI(id){const i=DB.pInvoices.find(x=>x.id===id);if(i){i.status='Pending';i.paid='';save();openDet(detCaseId);renderDash();toast('Marked pending','warn')}}
+function openCIForCase(cid){resetCI(cid);openM('m-ci')}
+function openPIForCase(cid){resetPI(cid);openM('m-pi')}
+
+function resetCase(){
+  ed.case=null;svcLines=[];
+  document.getElementById('m-case-t').textContent='New Case';
+  ['c-patient','c-nat','c-origin','c-dest','c-notes','c-extref'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('c-ref').value='AWAS-2026-'+(DB.cases.length+1).toString().padStart(3,'0');
+  document.getElementById('c-date').value=today();document.getElementById('c-svcdate').value=today();
+  document.getElementById('c-status').value='New';document.getElementById('c-vat').value=DB.settings.vat||0;
+  document.getElementById('c-client').innerHTML='<option value="">— Select Client —</option>'+DB.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  renderSvcLines();
+}
+function saveCase(){
+  const cl=document.getElementById('c-client').value;if(!cl){toast('Select a client','err');return}
+  if(!svcLines.length){toast('Add at least one service','err');return}
+  const id=ed.case||uid();
+  const obj={id,ref:document.getElementById('c-ref').value,client:cl,date:document.getElementById('c-date').value,svcDate:document.getElementById('c-svcdate').value,extref:document.getElementById('c-extref').value,patient:document.getElementById('c-patient').value,nat:document.getElementById('c-nat').value,origin:document.getElementById('c-origin').value,dest:document.getElementById('c-dest').value,status:document.getElementById('c-status').value,notes:document.getElementById('c-notes').value,vat:parseFloat(document.getElementById('c-vat').value)||0,services:[...svcLines]};
+  if(ed.case){const idx=DB.cases.findIndex(c=>c.id===ed.case);DB.cases[idx]=obj}else DB.cases.push(obj);
+  save();closeM('m-case');renderPipeline();renderCaseTbl();renderDash();
+  toast(ed.case?'Case updated':'Case created ✓ Now open it to issue the client invoice');
+  // Auto-open the new case detail
+  if(!ed.case){go('cases');setTimeout(()=>openDet(obj.id),200)}
+}
+function editCase(id){
+  const c=DB.cases.find(x=>x.id===id);if(!c)return;ed.case=id;
+  svcLines=[...(c.services||[]).map(s=>({...s}))];
+  document.getElementById('m-case-t').textContent='Edit Case — '+c.ref;
+  document.getElementById('c-client').innerHTML='<option value="">— Select Client —</option>'+DB.clients.map(cl=>`<option value="${cl.id}">${cl.name}</option>`).join('');
+  document.getElementById('c-ref').value=c.ref;document.getElementById('c-client').value=c.client;document.getElementById('c-date').value=c.date;document.getElementById('c-svcdate').value=c.svcDate||c.date;document.getElementById('c-extref').value=c.extref||'';document.getElementById('c-patient').value=c.patient||'';document.getElementById('c-nat').value=c.nat||'';document.getElementById('c-origin').value=c.origin||'';document.getElementById('c-dest').value=c.dest||'';document.getElementById('c-status').value=c.status;document.getElementById('c-notes').value=c.notes||'';document.getElementById('c-vat').value=c.vat||0;
+  renderSvcLines();openM('m-case');
+}
+// delCase defined above in CONFIRM DELETE section
+
+// ══════════════ CLIENT INVOICE ══════════════
+function resetCI(caseId){
+  ed.ci=null;tmpFile.ci=null;clearF('ci');
+  const c=caseId?DB.cases.find(x=>x.id===caseId):null;
+  document.getElementById('m-ci-t').textContent=c?'Issue Invoice — '+c.ref:'Client Invoice';
+  document.getElementById('ci-num').value=nextInvNum();
+  document.getElementById('ci-date').value=today();
+  document.getElementById('ci-due').value=new Date(Date.now()+30*864e5).toISOString().slice(0,10);
+  document.getElementById('ci-status').value='Draft';document.getElementById('ci-paid').value='';document.getElementById('ci-notes').value='';document.getElementById('ci-cur').value=DB.settings.currency||'EUR';
+  document.getElementById('ci-case-disp').value=c?c.ref:'';
+  document.getElementById('ci-case-disp').dataset.cid=caseId||'';
+  document.getElementById('ci-client-disp').value=c?cliN(c.client):'';
+  document.getElementById('ci-client-disp').dataset.clid=c?c.client:'';
+  // Invoice preview
+  if(c){
+    const sub=c.services.reduce((a,s)=>a+(s.amount||0),0);
+    const vatA=sub*(c.vat||0)/100,tot=sub+vatA;
+    const cur=DB.settings.currency||'EUR';
+    document.getElementById('ci-inv-preview').innerHTML=`
+      <div class="inv-doc-hd"><div class="inv-doc-hd-left">Invoice to ${cliN(c.client)}</div><div class="inv-doc-hd-right">${c.ref}</div></div>
+      ${c.services.map(s=>`<div class="inv-line">
+        <div style="flex:1"><div class="inv-line-name">${SVC_ICO[s.type]} ${s.type}</div><div class="inv-line-desc">${s.desc||''} · Qty ${s.qty} × ${fmt(s.rate,cur)}</div></div>
+        <div class="inv-line-amt">${fmt(s.amount,cur)}</div>
+      </div>`).join('')}
+      <div class="inv-totals">
+        ${c.vat?`<div class="inv-tr"><span style="color:var(--muted)">VAT ${c.vat}%</span><span style="font-family:var(--mono)">${fmt(vatA,cur)}</span></div>`:''}
+        <div class="inv-tr final"><span>Total</span><span style="font-family:var(--mono)">${fmt(tot,cur)}</span></div>
+      </div>`;
+  }else{document.getElementById('ci-inv-preview').innerHTML=`<div style="padding:14px;color:var(--muted);font-size:13px">No case linked — no line items to show.</div>`}
+}
+function saveCI(){
+  const caseId=document.getElementById('ci-case-disp').dataset.cid||'';
+  const clId=document.getElementById('ci-client-disp').dataset.clid||'';
+  const c=DB.cases.find(x=>x.id===caseId);
+  const sub=c?c.services.reduce((a,s)=>a+(s.amount||0),0):0;
+  const vatA=c?sub*(c.vat||0)/100:0;
+  const total=parseFloat((sub+vatA).toFixed(2));
+  const id=ed.ci||uid();
+  const obj={id,num:document.getElementById('ci-num').value,caseId,clId,date:document.getElementById('ci-date').value,due:document.getElementById('ci-due').value,total,cur:document.getElementById('ci-cur').value,status:document.getElementById('ci-status').value,paid:document.getElementById('ci-paid').value,notes:document.getElementById('ci-notes').value};
+  if(ed.ci){const idx=DB.cInvoices.findIndex(i=>i.id===ed.ci);DB.cInvoices[idx]=obj}else DB.cInvoices.push(obj);
+  if(tmpFile.ci)FS[id]={n:tmpFile.ci.name,d:tmpFile.ci.durl};
+  save();closeM('m-ci');renderCIList();if(detCaseId)openDet(detCaseId);renderDash();updBadges();toast('Invoice issued');
+}
+function editCI(id){
+  const i=DB.cInvoices.find(x=>x.id===id);if(!i)return;ed.ci=id;
+  resetCI(i.caseId);ed.ci=id;
+  document.getElementById('ci-num').value=i.num;document.getElementById('ci-date').value=i.date;document.getElementById('ci-due').value=i.due;document.getElementById('ci-status').value=i.status;document.getElementById('ci-paid').value=i.paid||'';document.getElementById('ci-notes').value=i.notes||'';document.getElementById('ci-cur').value=i.cur;
+  if(FS[id]){/* file was previously attached — no longer shown in modal */}
+  openM('m-ci');
+}
+// delCI defined above in CONFIRM DELETE section
+function popCIFilters(){
+  document.getElementById('ci-cf').innerHTML='<option value="">All Cases</option>'+DB.cases.map(c=>`<option value="${c.id}">${c.ref} — ${cliN(c.client)}</option>`).join('');
+  document.getElementById('ci-clf').innerHTML='<option value="">All Clients</option>'+DB.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+function renderCIList(){
+  const rows=DB.cInvoices.filter(i=>{
+    const s=(i.num+cliN(i.clId)+cRef(i.caseId)).toLowerCase();
+    return(!fCI.q||s.includes(fCI.q))&&(!fCI.st||i.status===fCI.st)&&(!fCI.caseId||i.caseId===fCI.caseId)&&(!fCI.clId||i.clId===fCI.clId);
+  });
+  document.getElementById('ci-tbody').innerHTML=rows.length?rows.map(i=>{
+    const c=DB.cases.find(x=>x.id===i.caseId);
+    return`<tr>
+      <td class="td-m">${i.num}</td>
+      <td><span class="tag tn" style="cursor:pointer" onclick="go('cases');setTimeout(()=>openDet('${i.caseId}'),200)">${cRef(i.caseId)}</span></td>
+      <td class="td-b">${cliN(i.clId)}</td>
+      <td class="td-m" style="color:var(--ink);font-weight:700">${c?.extref||'—'}</td>
+      <td>${(c?.services||[]).map(s=>sTag(s.type)).join(' ')}</td>
+      <td>${i.date}</td><td>${i.due}</td>
+      <td style="font-family:var(--mono);font-weight:800;font-size:14px">${fmt(i.total,i.cur)}</td>
+      <td>${payTag(i.status,i.paid)}</td>
+      <td><div class="td-acts">
+        <button class="btn btn-dark btn-xs" onclick="openPDFInvoice('${i.id}')" title="Preview &amp; Print PDF">🖨️ PDF</button>
+        <button style="background:#0072c6;color:#fff;border:none;border-radius:var(--rs);padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);display:inline-flex;align-items:center;gap:4px" onclick="sendInvoiceOutlook('${i.id}')" title="Send via Outlook">✉️ Send</button>
+        ${i.status!=='Paid'?`<button class="btn btn-green btn-xs" onclick="qPayCI('${i.id}')">✓ Paid</button>`:''}
+        <button class="btn btn-outline btn-xs" onclick="editCI('${i.id}')">Edit</button>
+        <button class="btn btn-red btn-xs" onclick="delCI('${i.id}')">🗑️</button>
+      </div></td>
+    </tr>`;}).join(''):`<tr><td colspan="10"><div class="empty"><div class="empty-ico">📄</div><div class="empty-t">No invoices yet</div><div class="empty-s">Open a case → Step 2 → Issue Invoice</div></div></td></tr>`;
+}
+function fCIq(v){fCI.q=v.toLowerCase();renderCIList()}
+function fCISt(v){fCI.st=v;renderCIList()}
+function fCICase(v){fCI.caseId=v;renderCIList()}
+function fCIClient(v){fCI.clId=v;renderCIList()}
+
+// ══════════════ PROVIDER INVOICE ══════════════
+function resetPI(caseId){
+  ed.pi=null;tmpFile.pi=null;clearF('pi');
+  document.getElementById('m-pi-t').textContent=caseId?'Add Provider Invoice — '+cRef(caseId):'New Provider Invoice';
+  ['pi-pnum','pi-desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pi-num').value=nextExpNum();
+  document.getElementById('pi-idate').value=today();document.getElementById('pi-amount').value='';document.getElementById('pi-status').value='Pending';document.getElementById('pi-paid').value='';document.getElementById('pi-cur').value='EUR';document.getElementById('pi-cat').value='Hospital/Medical';
+  document.getElementById('pi-case').innerHTML='<option value="">— No case link —</option>'+DB.cases.map(c=>`<option value="${c.id}">${c.ref} — ${cliN(c.client)}</option>`).join('');
+  if(caseId)document.getElementById('pi-case').value=caseId;
+  document.getElementById('pi-prov').innerHTML='<option value="">— Select Provider —</option>'+DB.providers.map(p=>`<option value="${p.id}">${p.name} (${p.type})</option>`).join('');
+  document.getElementById('pi-ai-st').textContent='Upload the provider\'s invoice — AI reads it and fills all fields automatically.';
+  document.querySelectorAll('#m-pi .ai-hit').forEach(el=>el.classList.remove('ai-hit'));
+}
+function savePI(){
+  const amount=parseFloat(document.getElementById('pi-amount').value);if(!amount||isNaN(amount)){toast('Enter an amount','err');return}
+  const id=ed.pi||uid();
+  const obj={id,num:document.getElementById('pi-num').value,caseId:document.getElementById('pi-case').value,pvId:document.getElementById('pi-prov').value,cat:document.getElementById('pi-cat').value,pnum:document.getElementById('pi-pnum').value,idate:document.getElementById('pi-idate').value,amount,cur:document.getElementById('pi-cur').value,status:document.getElementById('pi-status').value,paid:document.getElementById('pi-paid').value,desc:document.getElementById('pi-desc').value};
+  if(ed.pi){const idx=DB.pInvoices.findIndex(i=>i.id===ed.pi);DB.pInvoices[idx]=obj}else DB.pInvoices.push(obj);
+  if(tmpFile.pi)FS[id]={n:tmpFile.pi.name,d:tmpFile.pi.durl};
+  save();closeM('m-pi');renderPIList();if(detCaseId)openDet(detCaseId);renderDash();updBadges();toast('Provider invoice saved');
+}
+function editPI(id){
+  const i=DB.pInvoices.find(x=>x.id===id);if(!i)return;ed.pi=id;
+  resetPI(null);ed.pi=id;
+  document.getElementById('pi-case').value=i.caseId||'';
+  document.getElementById('pi-prov').innerHTML='<option value="">— Select Provider —</option>'+DB.providers.map(p=>`<option value="${p.id}">${p.name} (${p.type})</option>`).join('');
+  document.getElementById('pi-prov').value=i.pvId||'';document.getElementById('pi-cat').value=i.cat;document.getElementById('pi-pnum').value=i.pnum||'';document.getElementById('pi-idate').value=i.idate||'';document.getElementById('pi-amount').value=i.amount;document.getElementById('pi-cur').value=i.cur;document.getElementById('pi-status').value=i.status;document.getElementById('pi-paid').value=i.paid||'';document.getElementById('pi-desc').value=i.desc||'';
+  if(FS[id]){document.getElementById('pi-fn').textContent=FS[id].n;document.getElementById('pi-fp').style.display='block';document.getElementById('pi-uz').style.display='none'}
+  openM('m-pi');
+}
+// delPI defined above in CONFIRM DELETE section
+function popPIFilters(){
+  document.getElementById('pi-cf').innerHTML='<option value="">All Cases</option>'+DB.cases.map(c=>`<option value="${c.id}">${c.ref} — ${cliN(c.client)}</option>`).join('');
+  document.getElementById('pi-pf').innerHTML='<option value="">All Providers</option>'+DB.providers.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+}
+function renderPIList(){
+  const rows=DB.pInvoices.filter(i=>{
+    const s=(i.num+pvN(i.pvId)+i.cat+cRef(i.caseId)+i.pnum+i.desc).toLowerCase();
+    return(!fPI.q||s.includes(fPI.q))&&(!fPI.st||i.status===fPI.st)&&(!fPI.caseId||i.caseId===fPI.caseId)&&(!fPI.pvId||i.pvId===fPI.pvId);
+  });
+  document.getElementById('pi-tbody').innerHTML=rows.length?rows.map(i=>`<tr>
+    <td class="td-m">${i.num}</td>
+    <td><span class="tag tn" style="cursor:pointer" onclick="go('cases');setTimeout(()=>openDet('${i.caseId}'),200)">${cRef(i.caseId)}</span></td>
+    <td class="td-b">${pvN(i.pvId)}</td>
+    <td class="td-m" style="font-weight:700;color:var(--ink)">${i.pnum||'—'}</td>
+    <td><span class="tag tx">${i.cat}</span></td>
+    <td>${i.idate||'—'}</td>
+    <td style="font-family:var(--mono);font-weight:700">${fmt(i.amount,i.cur)}</td>
+    <td>${docLink(i.id)}</td>
+    <td>${expTag(i.status,i.paid)}</td>
+    <td><div class="td-acts">${i.status!=='Paid'?`<button class="btn btn-green btn-xs" onclick="qPayPI('${i.id}')">✓</button>`:''}<button class="btn btn-outline btn-xs" onclick="editPI('${i.id}')">Edit</button><button class="btn btn-red btn-xs" onclick="delPI('${i.id}')">✕</button></div></td>
+  </tr>`).join(''):`<tr><td colspan="10"><div class="empty"><div class="empty-ico">📥</div><div class="empty-t">No provider invoices</div></div></td></tr>`;
+}
+function fPIq(v){fPI.q=v.toLowerCase();renderPIList()}
+function fPISt(v){fPI.st=v;renderPIList()}
+function fPICase(v){fPI.caseId=v;renderPIList()}
+function fPIProv(v){fPI.pvId=v;renderPIList()}
+
+// ══════════════ AI EXTRACTION — FIXED & IMPROVED ══════════════
+async function extractPI(){
+  const key=localStorage.getItem('awas_k')||'';
+  if(!key){
+    toast('No API key — go to ⚙️ Settings and add your Anthropic key','err');
+    setTimeout(()=>go('settings'),1500);return;
+  }
+  const file=tmpFile.pi;
+  if(!file){toast('Upload a file first','err');return}
+  const st=document.getElementById('pi-ai-st');
+  const ap=document.getElementById('pi-ap');
+  st.innerHTML=`<span class="ai-spin"></span> Reading invoice — this takes 5-10 seconds…`;
+  ap.style.display='none';
+
+  const sys=`You are an expert invoice data extractor for a medical assistance company. Extract all data from this invoice document. Return ONLY a JSON object, nothing else, no markdown fences:
+{"invoice_number":"provider invoice number exactly as printed","supplier_name":"full legal name of issuing company","invoice_date":"YYYY-MM-DD or null","amount":numeric total amount,"currency":"EUR or USD or GBP or TND or TRY or CHF","category":"Hospital/Medical or Air Ambulance or Ground Ambulance or Pharmacy or Hotel/Accommodation or Transport/Flights or Other","description":"one sentence describing services","patient_name":"patient name if on invoice or null"}`;
+
+  let content;
+  if(file.mime==='application/pdf'){
+    content=[{type:'document',source:{type:'base64',media_type:'application/pdf',data:file.b64}},{type:'text',text:'Extract the invoice data as JSON.'}];
+  } else {
+    const allowedImg=['image/jpeg','image/png','image/webp','image/gif'];
+    const mimeToUse=allowedImg.includes(file.mime)?file.mime:'image/jpeg';
+    content=[{type:'image',source:{type:'base64',media_type:mimeToUse,data:file.b64}},{type:'text',text:'Extract the invoice data as JSON.'}];
+  }
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:sys,messages:[{role:'user',content}]})
+    });
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      toast(`API error ${res.status}: ${err.error?.message||res.statusText}`,'err');
+      st.textContent='Extraction failed — check your API key in Settings.';return;
+    }
+    const data=await res.json();
+    if(data.error){toast('API: '+data.error.message,'err');st.textContent='Failed.';return}
+    const raw=(data.content?.[0]?.text||'').replace(/```json|```/g,'').trim();
+    let parsed;
+    try{parsed=JSON.parse(raw)}
+    catch{
+      // Try extracting JSON from text
+      const match=raw.match(/\{[\s\S]*\}/);
+      if(match){try{parsed=JSON.parse(match[0])}catch{}}
+    }
+    if(!parsed){toast('Could not parse AI response','err');st.textContent='Parse failed.';ap.textContent=raw;ap.style.display='block';return}
+
+    const af=(id,val)=>{
+      if(val===null||val===undefined||String(val).trim()==='')return;
+      const el=document.getElementById(id);if(!el)return;
+      el.value=val;el.classList.add('ai-hit');
+      el.addEventListener('input',()=>el.classList.remove('ai-hit'),{once:true});
+    };
+    af('pi-pnum',parsed.invoice_number);
+    af('pi-idate',parsed.invoice_date);
+    if(parsed.amount&&!isNaN(parsed.amount))af('pi-amount',parsed.amount);
+    if(parsed.currency){
+      const sel=document.getElementById('pi-cur');
+      for(const o of sel.options)if(o.value.toUpperCase()===String(parsed.currency).toUpperCase().slice(0,3)){sel.value=o.value;sel.classList.add('ai-hit');break}
+    }
+    if(parsed.category){
+      const catMap={'hospital':'Hospital/Medical','air':'Air Ambulance','ground':'Ground Ambulance','ambulance':'Ground Ambulance','pharmacy':'Pharmacy','hotel':'Hotel/Accommodation','transport':'Transport/Flights','flight':'Transport/Flights'};
+      const sel=document.getElementById('pi-cat');
+      const catLower=(parsed.category||'').toLowerCase();
+      let matched=false;
+      for(const o of sel.options)if(o.value===parsed.category){sel.value=parsed.category;sel.classList.add('ai-hit');matched=true;break}
+      if(!matched){for(const[k,v]of Object.entries(catMap)){if(catLower.includes(k)){sel.value=v;sel.classList.add('ai-hit');break}}}
+    }
+    let desc=parsed.description||'';
+    if(parsed.patient_name&&desc&&!desc.toLowerCase().includes((parsed.patient_name||'').toLowerCase()))desc+=' · '+parsed.patient_name;
+    if(desc)af('pi-desc',desc);
+
+    // Smart provider match
+    if(parsed.supplier_name){
+      const nm=parsed.supplier_name.toLowerCase().replace(/[^a-z0-9]/g,' ').trim();
+      const words=nm.split(/\s+/).filter(w=>w.length>3);
+      const match=DB.providers.find(p=>{
+        const pn=p.name.toLowerCase();
+        return words.some(w=>pn.includes(w));
+      });
+      if(match){document.getElementById('pi-prov').value=match.id;document.getElementById('pi-prov').classList.add('ai-hit');toast(`✓ Matched provider: ${match.name}`,'ai')}
+      else{toast(`Provider "${parsed.supplier_name}" not in your list — select manually`,'warn')}
+    }
+
+    ap.textContent=JSON.stringify(parsed,null,2);ap.style.display='block';
+    st.innerHTML=`✅ <strong>Data extracted!</strong> Purple fields = AI-filled. Review and click Save.`;
+    toast('Invoice data extracted','ai');
+  }catch(e){
+    toast('Network error: '+e.message,'err');
+    st.innerHTML=`<span style="color:var(--red)">Connection failed. Check your internet and API key.</span>`;
+  }
+}
+
+// Auto-trigger extraction after file upload (with 500ms delay)
+const _origProcFile=procFile;
+function procFile(file,t){
+  if(file.size>15*1024*1024){toast('File too large (max 15MB)','err');return}
+  const r=new FileReader();
+  r.onload=ev=>{
+    const b64=ev.target.result.split(',')[1];
+    tmpFile[t]={name:file.name,b64,mime:file.type||'application/pdf',durl:ev.target.result};
+    document.getElementById(t+'-fn').textContent=file.name;
+    document.getElementById(t+'-fp').style.display='block';
+    document.getElementById(t+'-uz').style.display='none';
+    if(t==='pi'){
+      document.getElementById('pi-ai-st').textContent=`"${file.name}" loaded. Click 🤖 Auto-Fill to extract data.`;
+      // Auto-extract if API key present
+      if(localStorage.getItem('awas_k'))setTimeout(()=>extractPI(),400);
+    }
+  };r.readAsDataURL(file);
+}
+
+function dropF(e,t){e.preventDefault();e.currentTarget.classList.remove('dov');const f=e.dataTransfer.files[0];if(f)procFile(f,t)}
+function dzOn(e){e.preventDefault();e.currentTarget.classList.add('dov')}
+function dzOff(e){e.currentTarget.classList.remove('dov')}
+function selF(e,t){const f=e.target.files[0];if(f)procFile(f,t)}
+function clearF(t){
+  tmpFile[t]=null;
+  const fp=document.getElementById(t+'-fp');if(fp)fp.style.display='none';
+  const uz=document.getElementById(t+'-uz');if(uz)uz.style.display='block';
+  if(t==='pi'){
+    const ap=document.getElementById('pi-ap');if(ap)ap.style.display='none';
+    const st=document.getElementById('pi-ai-st');
+    if(st)st.textContent='Upload the provider\'s invoice — AI reads it and fills all fields automatically.';
+  }
+  const inp=document.getElementById(t+'-file');if(inp)inp.value='';
+}
+function swRep(m,btn){repMode=m;document.querySelectorAll('#page-reports .tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderRep(m)}
+function renderRep(m){
+  const el=document.getElementById('rep-body');
+  const tb=DB.cInvoices.reduce((a,i)=>a+(i.total||0),0);
+  const tc=DB.cInvoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.total||0),0);
+  const os=tb-tc;const te=DB.pInvoices.reduce((a,i)=>a+(i.amount||0),0);
+  const tp=DB.pInvoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
+  const pp=te-tp;const nm=tc-tp;
+  if(m==='pl'){el.innerHTML=`<div class="card-hd"><span class="card-title">Profit & Loss</span></div><div class="card-body">
+    <div class="r-sec">Revenue — Client Invoices</div>
+    <div class="rr rr-i"><span>Collected from clients</span><span style="font-family:var(--mono);color:var(--green);font-weight:700">${fmt(tc)}</span></div>
+    <div class="rr rr-i"><span>Outstanding (unpaid)</span><span style="font-family:var(--mono)">${fmt(os)}</span></div>
+    <div class="rr rr-b"><span>Total Billed</span><span style="font-family:var(--mono)">${fmt(tb)}</span></div>
+    <div class="r-sec">Costs — Provider Invoices</div>
+    <div class="rr rr-i"><span>Paid to providers</span><span style="font-family:var(--mono);color:var(--red);font-weight:700">${fmt(tp)}</span></div>
+    <div class="rr rr-i"><span>Pending payment</span><span style="font-family:var(--mono)">${fmt(pp)}</span></div>
+    <div class="rr rr-b"><span>Total Provider Costs</span><span style="font-family:var(--mono)">${fmt(te)}</span></div>
+    <div style="height:1.5px;background:var(--border);margin:8px 0"></div>
+    <div class="rr rr-b" style="font-size:17px;color:${nm>=0?'var(--green)':'var(--red)'}"><span>Net Margin</span><span style="font-family:var(--mono)">${fmt(nm)}</span></div>
+  </div>`}
+  else if(m==='cf'){el.innerHTML=`<div class="card-hd"><span class="card-title">Cash Flow</span></div><div class="card-body">
+    <div class="r-sec">Inflows</div>
+    <div class="rr rr-i"><span>Collected from clients</span><span style="font-family:var(--mono);color:var(--green)">${fmt(tc)}</span></div>
+    <div class="rr rr-b"><span>Total In</span><span style="font-family:var(--mono)">${fmt(tc)}</span></div>
+    <div class="r-sec">Outflows</div>
+    <div class="rr rr-i"><span>Paid to providers</span><span style="font-family:var(--mono);color:var(--red)">${fmt(tp)}</span></div>
+    <div class="rr rr-b"><span>Total Out</span><span style="font-family:var(--mono)">${fmt(tp)}</span></div>
+    <div style="height:1.5px;background:var(--border);margin:8px 0"></div>
+    <div class="rr rr-b" style="font-size:17px"><span>Net Cash</span><span style="font-family:var(--mono);color:${(tc-tp)>=0?'var(--green)':'var(--red)'}">${fmt(tc-tp)}</span></div>
+    <div class="r-sec">Commitments</div>
+    <div class="rr rr-i"><span>Outstanding client invoices (to receive)</span><span style="font-family:var(--mono)">${fmt(os)}</span></div>
+    <div class="rr rr-i"><span>Pending provider invoices (to pay)</span><span style="font-family:var(--mono)">${fmt(pp)}</span></div>
+  </div>`}
+  else if(m==='aged'){
+    const now=new Date();
+    const aged=DB.cInvoices.filter(i=>i.status!=='Paid').map(i=>({...i,days:Math.floor((now-new Date(i.due))/864e5)})).sort((a,b)=>b.days-a.days);
+    el.innerHTML=`<div class="card-hd"><span class="card-title">Aged Receivables</span></div><div style="padding:0"><div class="tw"><table>
+      <thead><tr><th>Invoice</th><th>Case</th><th>Client</th><th>Due</th><th>Days</th><th>Amount</th><th>Status</th></tr></thead>
+      <tbody>${aged.length?aged.map(i=>`<tr>
+        <td class="td-m">${i.num}</td><td class="td-m">${cRef(i.caseId)}</td><td class="td-b">${cliN(i.clId)}</td><td>${i.due}</td>
+        <td>${i.days>0?`<span style="color:var(--red);font-weight:700;font-family:var(--mono)">+${i.days}d</span>`:`<span style="color:var(--green);font-weight:700">Not due</span>`}</td>
+        <td style="font-family:var(--mono);font-weight:700">${fmt(i.total,i.cur)}</td><td>${stTag(i.status)}</td>
+      </tr>`).join(''):`<tr><td colspan="7"><div class="empty"><div class="empty-ico">🎉</div><div class="empty-t">All caught up</div></div></td></tr>`}</tbody>
+    </table></div></div>`}
+  else if(m==='bycase'){el.innerHTML=`<div class="card-hd"><span class="card-title">By Case</span></div><div style="padding:0"><div class="tw"><table>
+    <thead><tr><th>Case</th><th>Client</th><th>Services</th><th>Billed</th><th>Collected</th><th>Outstanding</th><th>Cost</th><th>Margin</th></tr></thead>
+    <tbody>${DB.cases.map(c=>{const t=caseTots(c.id);return`<tr>
+      <td class="td-m" style="cursor:pointer;text-decoration:underline" onclick="go('cases');setTimeout(()=>openDet('${c.id}'),200)">${c.ref}</td>
+      <td class="td-b">${cliN(c.client)}</td>
+      <td>${(c.services||[]).map(s=>sTag(s.type)).join(' ')}</td>
+      <td style="font-family:var(--mono)">${fmt(t.billed)}</td>
+      <td style="font-family:var(--mono);color:var(--green);font-weight:700">${fmt(t.collected)}</td>
+      <td style="font-family:var(--mono);color:${t.outstanding>0?'var(--red)':'var(--muted)'}">${fmt(t.outstanding)}</td>
+      <td style="font-family:var(--mono);color:var(--red)">${fmt(t.cost)}</td>
+      <td style="font-family:var(--mono);font-weight:700;color:${t.margin>=0?'var(--green)':'var(--red)'}">${fmt(t.margin)}</td>
+    </tr>`;}).join('')}</tbody></table></div></div>`}
+  else if(m==='bysvc'){
+    el.innerHTML=`<div class="card-hd"><span class="card-title">By Service</span></div><div style="padding:0"><div class="tw"><table>
+      <thead><tr><th>Service</th><th>Cases</th><th>Total Billed</th><th>Collected</th></tr></thead>
+      <tbody>${SVCS.map(sv=>{
+        const cas=DB.cases.filter(c=>c.services.some(s=>s.type===sv));
+        const billed=DB.cases.reduce((a,c)=>{const ms=c.services.filter(s=>s.type===sv);const sub=ms.reduce((b,s)=>b+(s.amount||0),0);return a+sub+sub*(c.vat||0)/100},0);
+        const coll=DB.cInvoices.filter(i=>{const c=DB.cases.find(x=>x.id===i.caseId);return c&&c.services.some(s=>s.type===sv)&&i.status==='Paid'}).reduce((a,i)=>a+(i.total||0),0);
+        return`<tr><td>${sTag(sv)}</td><td style="font-weight:700">${cas.length}</td><td style="font-family:var(--mono)">${fmt(billed)}</td><td style="font-family:var(--mono);color:var(--green);font-weight:700">${fmt(coll)}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div></div>`}
+}
+
+// ══════════════ DIRECTORY ══════════════
+function renderDirC(){
+  const cl=DB.clients.filter(c=>{const s=(c.name+c.email+c.country).toLowerCase();return!dirCQ||s.includes(dirCQ)});
+  document.getElementById('dir-clients').innerHTML=cl.length?cl.map(c=>`
+    <div class="dir-card" style="position:relative">
+      <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px" onclick="editClient('${c.id}')" style="cursor:pointer">
+        <div class="dir-av" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">${c.name.charAt(0).toUpperCase()}</div>
+        <div style="flex:1;cursor:pointer" onclick="editClient('${c.id}')"><div class="dir-name">${c.name}</div><div class="dir-sub">${c.country||'—'}</div></div>
+        <button class="btn btn-red btn-xs" onclick="event.stopPropagation();delClient('${c.id}')" title="Delete client">🗑️</button>
+      </div>
+      ${c.email?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:3px">📧 ${c.email}</div>`:''}
+      ${c.phone?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:3px">📞 ${c.phone}</div>`:''}
+      <div class="dir-stat" style="color:var(--blue);cursor:pointer" onclick="editClient('${c.id}')">${DB.cases.filter(j=>j.client===c.id).length} cases · ${fmt(DB.cInvoices.filter(i=>i.clId===c.id).reduce((a,i)=>a+(i.total||0),0))} billed</div>
+    </div>`).join(''):`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ico">👤</div><div class="empty-t">No clients yet</div><div class="empty-s">Click + New Client to add one</div></div></div>`;
+}
+const pvCols={'Hospital/Clinic':'#7b1fa2','Air Ambulance':'#1565c0','Ground Ambulance':'#2e7d32',Pharmacy:'#e65100',Hotel:'#c47f17',Transport:'#1a5eb8',Other:'#6b7280'};
+function renderDirP(){
+  const pv=DB.providers.filter(p=>{const s=(p.name+p.type+p.country).toLowerCase();return(!dirPQ||s.includes(dirPQ))&&(!dirPTQ||p.type===dirPTQ)});
+  document.getElementById('dir-providers').innerHTML=pv.length?pv.map(p=>`
+    <div class="dir-card">
+      <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+        <div class="dir-av" style="background:${pvCols[p.type]||'#555'}">${p.name.charAt(0).toUpperCase()}</div>
+        <div style="flex:1;cursor:pointer" onclick="editProv('${p.id}')"><div class="dir-name">${p.name}</div><div style="display:flex;gap:4px;margin-top:3px"><span class="tag tn" style="font-size:10px">${p.type}</span></div></div>
+        <button class="btn btn-red btn-xs" onclick="delProvider('${p.id}')" title="Delete provider">🗑️</button>
+      </div>
+      ${p.country?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:3px">🌍 ${p.country}</div>`:''}
+      ${p.email?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:3px">📧 ${p.email}</div>`:''}
+      ${p.phone?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:3px">📞 ${p.phone}</div>`:''}
+      <div class="dir-stat" style="color:var(--red)">${DB.pInvoices.filter(i=>i.pvId===p.id).length} invoices · ${fmt(DB.pInvoices.filter(i=>i.pvId===p.id).reduce((a,i)=>a+(i.amount||0),0))}</div>
+    </div>`).join(''):`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ico">🏥</div><div class="empty-t">No providers yet</div></div></div>`;
+}
+function fDirC(v){dirCQ=v.toLowerCase();renderDirC()}
+function fDirP(v){dirPQ=v.toLowerCase();renderDirP()}
+function fDirPT(v){dirPTQ=v;renderDirP()}
+
+function resetCl(){ed.cl=null;document.getElementById('m-cl-t').textContent='New Client';['cl-name','cl-taxid','cl-address','cl-city','cl-email','cl-phone','cl-country','cl-person','cl-notes'].forEach(id=>document.getElementById(id).value='')}
+function saveClient(){
+  const name=document.getElementById('cl-name').value.trim();if(!name){toast('Enter a name','err');return}
+  const obj={id:ed.cl||uid(),name,taxId:document.getElementById('cl-taxid').value,address:document.getElementById('cl-address').value,city:document.getElementById('cl-city').value,email:document.getElementById('cl-email').value,phone:document.getElementById('cl-phone').value,country:document.getElementById('cl-country').value,person:document.getElementById('cl-person').value,notes:document.getElementById('cl-notes').value};
+  if(ed.cl){const idx=DB.clients.findIndex(c=>c.id===ed.cl);DB.clients[idx]=obj}else DB.clients.push(obj);
+  save();closeM('m-client');renderDirC();toast(ed.cl?'Updated':'Client added');
+}
+function editClient(id){const c=DB.clients.find(x=>x.id===id);if(!c)return;ed.cl=id;document.getElementById('m-cl-t').textContent='Edit Client';document.getElementById('cl-name').value=c.name;document.getElementById('cl-taxid').value=c.taxId||'';document.getElementById('cl-address').value=c.address||'';document.getElementById('cl-city').value=c.city||'';document.getElementById('cl-email').value=c.email||'';document.getElementById('cl-phone').value=c.phone||'';document.getElementById('cl-country').value=c.country||'';document.getElementById('cl-person').value=c.person||'';document.getElementById('cl-notes').value=c.notes||'';openM('m-client')}
+
+function resetPv(){ed.pv=null;document.getElementById('m-pv-t').textContent='New Provider';['pv-name','pv-country','pv-email','pv-phone','pv-person','pv-notes'].forEach(id=>document.getElementById(id).value='');document.getElementById('pv-type').value='Hospital/Clinic'}
+function saveProvider(){
+  const name=document.getElementById('pv-name').value.trim();if(!name){toast('Enter a name','err');return}
+  const obj={id:ed.pv||uid(),name,type:document.getElementById('pv-type').value,country:document.getElementById('pv-country').value,email:document.getElementById('pv-email').value,phone:document.getElementById('pv-phone').value,person:document.getElementById('pv-person').value,notes:document.getElementById('pv-notes').value};
+  if(ed.pv){const idx=DB.providers.findIndex(p=>p.id===ed.pv);DB.providers[idx]=obj}else DB.providers.push(obj);
+  save();closeM('m-prov');renderDirP();toast(ed.pv?'Updated':'Provider added');
+}
+function editProv(id){const p=DB.providers.find(x=>x.id===id);if(!p)return;ed.pv=id;document.getElementById('m-pv-t').textContent='Edit Provider';document.getElementById('pv-name').value=p.name;document.getElementById('pv-type').value=p.type;document.getElementById('pv-country').value=p.country||'';document.getElementById('pv-email').value=p.email||'';document.getElementById('pv-phone').value=p.phone||'';document.getElementById('pv-person').value=p.person||'';document.getElementById('pv-notes').value=p.notes||'';openM('m-prov')}
+
+// ══════════════ SETTINGS ══════════════
+function saveSettings(){
+  DB.settings={
+    company:document.getElementById('s-co').value,
+    vatNo:document.getElementById('s-vat-no').value,
+    desc:document.getElementById('s-desc').value,
+    addr1:document.getElementById('s-addr1').value,
+    addr2:document.getElementById('s-addr2').value,
+    country:document.getElementById('s-country').value,
+    email:document.getElementById('s-em').value,
+    email2:document.getElementById('s-em2').value,
+    website:document.getElementById('s-web').value,
+    phone:document.getElementById('s-ph').value,
+    currency:document.getElementById('s-cur').value,
+    vat:parseInt(document.getElementById('s-vat').value)||0,
+    bank:document.getElementById('s-bank').value,
+    bic:document.getElementById('s-bic').value,
+    iban:document.getElementById('s-iban').value,
+    bene:document.getElementById('s-bene').value,
+    payinst:document.getElementById('s-payinst').value,
+    logo:DB.settings.logo||''
+  };
+  save();toast('Settings saved');
+}
+function uploadLogo(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    DB.settings.logo=ev.target.result;save();
+    showLogoPreview(ev.target.result);toast('Logo uploaded');
+  };r.readAsDataURL(f);
+}
+function showLogoPreview(src){
+  const el=document.getElementById('logo-preview');
+  if(src){el.innerHTML=`<img src="${src}" style="max-width:100%;max-height:100%;object-fit:contain">`;el.style.border='1.5px solid var(--border)'}
+  else{el.innerHTML=`<span style="font-size:11px;color:var(--muted);text-align:center;font-weight:700;font-family:var(--head)">Click to<br>Upload Logo</span>`;el.style.border='2px dashed var(--border2)'}
+}
+function clearLogo(){DB.settings.logo='';save();showLogoPreview('');toast('Logo removed','warn')}
+function exportData(){const b=new Blob([JSON.stringify({DB,FS},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='awas_'+today()+'.json';a.click();toast('Exported')}
+
+// ══════════════ PDF INVOICE GENERATOR ══════════════
+function openPDFInvoice(ciId){
+  _currentInvId=ciId;
+  const inv=DB.cInvoices.find(x=>x.id===ciId);if(!inv)return;
+  const c=DB.cases.find(x=>x.id===inv.caseId)||{services:[],vat:0,extref:'',ref:''};
+  const client=DB.clients.find(x=>x.id===inv.clId)||{};
+  const S=DB.settings;
+  const cur=inv.cur||S.currency||'EUR';
+  const sub=c.services.reduce((a,s)=>a+(s.amount||0),0);
+  const vatPct=c.vat||0;
+  const vatAmt=sub*vatPct/100;
+  const total=sub+vatAmt;
+  const logoHTML=S.logo?`<img src="${S.logo}" style="max-height:70px;max-width:140px;object-fit:contain">`:
+    `<div style="font-size:22px;font-weight:900;letter-spacing:-1px;color:#1a1a1a">${S.company||'AWAS'}</div>`;
+
+  const html=`
+  <div style="font-family:'Arial',sans-serif;font-size:12px;color:#1a1a1a;max-width:700px;margin:0 auto;padding:0">
+
+    <!-- HEADER -->
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:28px;font-weight:900;letter-spacing:3px;color:#1a1a1a;margin-bottom:6px">INVOICE</div>
+    </div>
+
+    <!-- TOP SECTION: Logo + Company LEFT | Invoice Details RIGHT -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">
+      <!-- LEFT: Logo + Company Info -->
+      <div style="flex:1;max-width:55%">
+        <div style="margin-bottom:10px">${logoHTML}</div>
+        <div style="font-weight:700;font-size:13px;margin-bottom:3px">${S.company||'AWAS. LTD'}</div>
+        ${S.vatNo?`<div style="margin-bottom:2px">VAT No: ${S.vatNo}</div>`:''}
+        ${S.desc?`<div style="margin-bottom:4px;color:#444;font-size:11.5px">${S.desc}</div>`:''}
+        ${S.addr1?`<div>${S.addr1}</div>`:''}
+        ${S.addr2?`<div>${S.addr2}</div>`:''}
+        ${S.country?`<div style="margin-bottom:4px">${S.country}</div>`:''}
+        ${S.email?`<div>${S.email}</div>`:''}
+        ${S.email2?`<div>${S.email2}</div>`:''}
+        ${S.website?`<div>${S.website}</div>`:''}
+      </div>
+      <!-- RIGHT: Invoice Meta -->
+      <div style="text-align:right">
+        <table style="margin-left:auto;border-collapse:collapse">
+          <tr><td style="padding:2px 8px 2px 0;color:#555">Date :</td><td style="padding:2px 0;font-weight:600">${inv.date}</td></tr>
+          <tr><td style="padding:2px 8px 2px 0;color:#555">Invoice No.:</td><td style="padding:2px 0;font-weight:600">${inv.num}</td></tr>
+          ${c.extref?`<tr><td style="padding:2px 8px 2px 0;color:#555">Ref.No:</td><td style="padding:2px 0;font-weight:600">${c.extref}</td></tr>`:''}
+        </table>
+      </div>
+    </div>
+
+    <!-- BILL TO -->
+    <div style="margin-bottom:22px">
+      <div style="font-weight:700;margin-bottom:5px">Bill To:</div>
+      <div style="font-weight:700">${client.name||''}</div>
+      ${client.name?`<div>${client.name}</div>`:''}
+      ${client.taxId?`<div>Id.No: ${client.taxId}</div>`:''}
+      ${client.address?`<div>${client.address}</div>`:''}
+      ${client.country?`<div>${client.country}${client.city?', '+client.city:''}</div>`:''}
+    </div>
+
+    <!-- LINE ITEMS TABLE -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+      <thead>
+        <tr style="background:#f5f5f5">
+          <th style="border:1px solid #ddd;padding:8px 10px;text-align:left;font-size:11.5px">Ref No :</th>
+          <th style="border:1px solid #ddd;padding:8px 10px;text-align:left;font-size:11.5px">Description</th>
+          <th style="border:1px solid #ddd;padding:8px 10px;text-align:right;font-size:11.5px">Unit Price</th>
+          <th style="border:1px solid #ddd;padding:8px 10px;text-align:right;font-size:11.5px">VAT</th>
+          <th style="border:1px solid #ddd;padding:8px 10px;text-align:right;font-size:11.5px">TAX %</th>
+          <th style="border:1px solid #ddd;padding:8px 10px;text-align:right;font-size:11.5px">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${c.services.map((s,i)=>{
+          const lineVat=s.amount*vatPct/100;
+          return`<tr>
+            <td style="border:1px solid #ddd;padding:8px 10px">${c.extref||c.ref||''}</td>
+            <td style="border:1px solid #ddd;padding:8px 10px">${s.desc||s.type}</td>
+            <td style="border:1px solid #ddd;padding:8px 10px;text-align:right">${fmtInv(s.amount,cur)}</td>
+            <td style="border:1px solid #ddd;padding:8px 10px;text-align:right">${fmtInv(lineVat,cur)}</td>
+            <td style="border:1px solid #ddd;padding:8px 10px;text-align:right">${vatPct}%</td>
+            <td style="border:1px solid #ddd;padding:8px 10px;text-align:right;font-weight:600">${fmtInv(s.amount+lineVat,cur)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+
+    <!-- TOTALS -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:24px">
+      <table style="min-width:220px;border-collapse:collapse">
+        ${vatPct?`<tr><td style="padding:4px 14px 4px 0;color:#555">Subtotal</td><td style="padding:4px 0;text-align:right">${fmtInv(sub,cur)}</td></tr>
+        <tr><td style="padding:4px 14px 4px 0;color:#555">VAT ${vatPct}%</td><td style="padding:4px 0;text-align:right">${fmtInv(vatAmt,cur)}</td></tr>`:''}
+        <tr><td style="padding:6px 14px 6px 0;font-weight:700;font-size:13px">Total</td><td style="padding:6px 0;font-weight:700;font-size:13px;text-align:right">${fmtInv(total,cur)}</td></tr>
+        <tr><td style="padding:4px 14px 4px 0;font-weight:700">Balance Due</td><td style="padding:4px 0;font-weight:700;text-align:right">${fmtInv(inv.status==='Paid'?0:total,cur)}</td></tr>
+      </table>
+    </div>
+
+    <!-- PAYMENT DETAILS -->
+    ${(S.bank||S.iban)?`<div style="margin-bottom:24px">
+      <div style="font-weight:700;margin-bottom:4px">Payment Method : Bank Transfer</div>
+      ${S.bank?`<div>Bank Details: ${S.bank}</div>`:''}
+      ${S.bic?`<div>BIC: &nbsp;&nbsp;&nbsp;${S.bic}</div>`:''}
+      ${S.iban?`<div>IBAN: &nbsp;&nbsp;${S.iban}</div>`:''}
+      ${S.bene?`<div>Beneficiary : ${S.bene}</div>`:''}
+      ${S.payinst?`<div style="margin-top:5px">${S.payinst}</div>`:''}
+    </div>`:''}
+
+    ${inv.notes?`<div style="margin-bottom:20px;padding:10px;background:#f9f9f9;border-left:3px solid #ddd;font-size:11.5px">${inv.notes}</div>`:''}
+
+    <!-- FOOTER -->
+    <div style="text-align:center;margin-top:30px;padding-top:16px;border-top:1px solid #eee">
+      <div style="font-weight:700;margin-bottom:4px">Thank you for your cooperation</div>
+      <div style="font-weight:700">${S.company||'AWAS.LTD'}</div>
+      ${S.email2?`<div>${S.email2}</div>`:''}
+      ${S.email?`<div>${S.email}</div>`:''}
+      ${S.website?`<div style="margin-top:3px">${S.website}</div>`:''}
+    </div>
+
+    <!-- REMITTANCE SLIP -->
+    <div style="margin-top:40px;page-break-before:always">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:22px;font-weight:900;letter-spacing:3px">REMITTANCE</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr><td style="padding:6px 12px 6px 0;color:#555;width:40%">Invoice No.:</td><td style="padding:6px 0;font-weight:700">${inv.num}</td></tr>
+        <tr><td style="padding:6px 12px 6px 0;color:#555">Customer Name:</td><td style="padding:6px 0;font-weight:700">${client.name||''}</td></tr>
+        <tr><td style="padding:6px 12px 6px 0;color:#555">Date :</td><td style="padding:6px 0;font-weight:700">${inv.date}</td></tr>
+        <tr><td style="padding:6px 12px 6px 0;color:#555">Amount Enclosed:</td><td style="padding:6px 0;font-weight:700">${fmtInv(total,cur)}</td></tr>
+      </table>
+      <div style="text-align:right;margin-top:8px;font-size:11px;color:#888">Invoice #${inv.num}, Page 2</div>
+    </div>
+
+    <div style="text-align:right;margin-top:8px;font-size:11px;color:#888">Invoice #${inv.num}, Page 1</div>
+  </div>`;
+
+  document.getElementById('pdf-invoice-body').innerHTML=html;
+  openM('m-pdf');
+}
+
+function fmtInv(n,c='EUR'){
+  // Format like the AWAS invoice: 190,00€
+  try{
+    const formatted=new Intl.NumberFormat('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
+    const sym={EUR:'€',USD:'$',GBP:'£'}[c]||c+' ';
+    return formatted+sym;
+  }catch{return Number(n||0).toFixed(2)+(c==='EUR'?'€':c)}
+}
+
+// ══════════════ OUTLOOK SEND ══════════════
+let _currentInvId=null;
+function sendInvoiceOutlook(ciId){
+  // Open PDF preview first, then trigger Outlook
+  openPDFInvoice(ciId);
+  setTimeout(()=>sendViaOutlook(),300);
+}
+function sendFromModal(){
+  saveCI();
+  setTimeout(()=>{if(_currentInvId)sendViaOutlook()},400);
+}
+function sendViaOutlook(){
+  if(!_currentInvId)return;
+  const inv=DB.cInvoices.find(x=>x.id===_currentInvId);if(!inv)return;
+  const c=DB.cases.find(x=>x.id===inv.caseId)||{services:[],ref:'',extref:''};
+  const client=DB.clients.find(x=>x.id===inv.clId)||{};
+  const S=DB.settings;
+  const svcs=c.services.map(s=>s.type).join(', ');
+  const subject=encodeURIComponent(`Invoice ${inv.num} — ${svcs}${c.extref?' — Ref: '+c.extref:''}`);
+  const body=encodeURIComponent(
+`Dear ${client.person||client.name||'Sir/Madam'},
+
+Please find attached invoice ${inv.num} for services provided.
+
+Invoice Details:
+─────────────────────────────
+Invoice No.: ${inv.num}
+Date: ${inv.date}
+Due Date: ${inv.due}
+${c.extref?'Reference: '+c.extref+'\n':''}Client: ${client.name||''}
+Services: ${svcs}
+Amount Due: ${fmtInv(inv.total,inv.cur)}
+─────────────────────────────
+
+Payment Method: Bank Transfer
+${S.bank?'Bank: '+S.bank+'\n':''}${S.bic?'BIC: '+S.bic+'\n':''}${S.iban?'IBAN: '+S.iban+'\n':''}${S.bene?'Beneficiary: '+S.bene+'\n':''}
+Please process payment by ${inv.due}.
+
+${S.payinst?S.payinst+'\n\n':''}Thank you for your cooperation.
+
+Best regards,
+${S.company||'AWAS LTD'}
+${S.email||''}
+${S.website||''}
+`);
+  const mailto=`mailto:${client.email||''}?subject=${subject}&body=${body}`;
+  window.location.href=mailto;
+  toast('Outlook should open now — attach the PDF before sending','ai');
+}
+
+function printInvoice(){
+  const content=document.getElementById('pdf-invoice-body').innerHTML;
+  const pr=document.getElementById('print-root');
+  pr.innerHTML=`<style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,Helvetica,sans-serif;font-size:11.5pt;color:#1a1a1a}
+    @page{size:A4;margin:15mm 18mm 20mm 18mm}
+    table{border-collapse:collapse;width:100%}
+    th,td{padding:7pt 10pt;text-align:left}
+    @media print{.no-print{display:none}}
+  </style>`+content;
+  pr.style.display='block';
+  document.querySelectorAll('body > *:not(#print-root)').forEach(el=>{el._prevDisplay=el.style.display;el.style.display='none'});
+  window.print();
+  setTimeout(()=>{
+    document.querySelectorAll('body > *:not(#print-root)').forEach(el=>{el.style.display=el._prevDisplay||''});
+    pr.style.display='none';
+  },1000);
+  toast('Use "Save as PDF" in the print dialog','ok');
+}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.DB)DB=d.DB;if(d.FS)FS=d.FS;save();renderPage(curPage);toast('Imported')}catch{toast('Invalid file','err')}};r.readAsText(f)}
+function clearAll(){DB={cases:[],cInvoices:[],pInvoices:[],clients:[],providers:[],settings:DB.settings};FS={};save();renderPage(curPage);toast('Cleared','warn')}
+
+// ══════════════ FIREBASE CONFIG MANAGEMENT ══════════════
+function saveFBConfig(){
+  const cfg={
+    apiKey:document.getElementById('fb-apikey')?.value||'',
+    projectId:document.getElementById('fb-projectid')?.value||'healthwatch-tpa',
+    appId:document.getElementById('fb-appid')?.value||'',
+    messagingSenderId:document.getElementById('fb-senderid')?.value||''
+  };
+  localStorage.setItem('awas_fb_cfg',JSON.stringify(cfg));
+}
+function applyFBConfig(){
+  saveFBConfig();
+  const cfg=JSON.parse(localStorage.getItem('awas_fb_cfg')||'{}');
+  if(!cfg.apiKey){toast('Enter your Firebase API Key first','err');return}
+  FB_CONFIG.apiKey=cfg.apiKey;
+  FB_CONFIG.projectId=cfg.projectId||'healthwatch-tpa';
+  FB_CONFIG.authDomain=(cfg.projectId||'healthwatch-tpa')+'.firebaseapp.com';
+  FB_CONFIG.storageBucket=(cfg.projectId||'healthwatch-tpa')+'.appspot.com';
+  FB_CONFIG.appId=cfg.appId;
+  FB_CONFIG.messagingSenderId=cfg.messagingSenderId;
+  FB_READY=false;db_fs=null;
+  // Delete existing Firebase app then reinit
+  const existing=firebase.apps[0];
+  if(existing){
+    existing.delete().then(()=>{
+      const ok=initFirebase();
+      if(ok){save();toast('🔥 Firebase connected! Saving…','ai')}
+      else{toast('Connection failed — check your config','err')}
+    });
+  }else{
+    const ok=initFirebase();
+    if(ok){save();toast('🔥 Firebase connected! Saving…','ai')}
+    else{toast('Connection failed — check your config','err')}
+  }
+}
+function manualSync(){
+  if(!FB_READY){toast('Firebase not connected — go to Settings → Firebase','warn');return}
+  save().then(()=>toast('Synced to cloud ✓','ok')).catch(()=>toast('Sync failed','err'));
+}
+async function pullFromCloud(){
+  if(!FB_READY){toast('Firebase not connected','warn');return}
+  showSyncStatus('⟳ Pulling…','blue');
+  await load();
+  renderPage(curPage);updBadges();checkOverdue();loadSettingsUI();
+  toast('Data pulled from cloud ✓','ok');
+}
+function loadFBConfigUI(){
+  const cfg=JSON.parse(localStorage.getItem('awas_fb_cfg')||'{}');
+  if(document.getElementById('fb-apikey'))document.getElementById('fb-apikey').value=cfg.apiKey||'';
+  if(document.getElementById('fb-projectid'))document.getElementById('fb-projectid').value=cfg.projectId||'healthwatch-tpa';
+  if(document.getElementById('fb-appid'))document.getElementById('fb-appid').value=cfg.appId||'';
+  if(document.getElementById('fb-senderid'))document.getElementById('fb-senderid').value=cfg.messagingSenderId||'';
+  // Auto-apply saved config
+  if(cfg.apiKey){
+    FB_CONFIG.apiKey=cfg.apiKey;
+    FB_CONFIG.projectId=cfg.projectId||'healthwatch-tpa';
+    FB_CONFIG.authDomain=(cfg.projectId||'healthwatch-tpa')+'.firebaseapp.com';
+    FB_CONFIG.storageBucket=(cfg.projectId||'healthwatch-tpa')+'.appspot.com';
+    FB_CONFIG.appId=cfg.appId||'';
+    FB_CONFIG.messagingSenderId=cfg.messagingSenderId||'';
+    // Small delay to ensure Firebase SDK is fully ready
+    setTimeout(()=>{
+      const ok=initFirebase();
+      if(ok)setTimeout(()=>load(),300);
+    },200);
+  }
+}
+function loadSettingsUI(){
+  const S=DB.settings;
+  const fields={
+    's-co':S.company||'AWAS. LTD','s-vat-no':S.vatNo||'',
+    's-desc':S.desc||'MEDICAL ASSISTANCE SERVICES- MEDICAL REPATRIATION AND AIR AMBULANCE',
+    's-addr1':S.addr1||'Sergey Rumyantsev 1','s-addr2':S.addr2||'Blagoevgrad 2700',
+    's-country':S.country||'Bulgaria','s-em':S.email||'info@awasmed.com',
+    's-em2':S.email2||'accounts@awasmed.com','s-web':S.website||'www.awasmed.com',
+    's-ph':S.phone||'','s-cur':S.currency||'EUR','s-vat':S.vat||0,
+    's-bank':S.bank||'ProCredit Bank','s-bic':S.bic||'PRCBBGSF',
+    's-iban':S.iban||'BG67PRCB92301448715916','s-bene':S.bene||'AWAS LTD',
+    's-payinst':S.payinst||''
+  };
+  Object.entries(fields).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.value=val});
+  if(S.logo)showLogoPreview(S.logo);
+}
+
+// ══════════════ INIT ══════════════
+function startApp(){
+  // Step 1: Load from localStorage for instant UI
+  const _d=localStorage.getItem('awas6'),_f=localStorage.getItem('awas6f');
+  if(_d){try{DB=JSON.parse(_d)}catch(e){seed()}}else{seed()}
+  if(_f){try{FS=JSON.parse(_f)}catch(e){FS={}}}
+
+  // Step 2: Load settings UI
+  document.getElementById('s-key').value=localStorage.getItem('awas_k')||'';
+  loadSettingsUI();
+
+  // Step 3: Render app with local data
+  go('dash');
+  checkOverdue();
+  window.addEventListener('resize',()=>{if(curPage==='dash')renderDash()});
+  setInterval(checkOverdue,3600000);
+
+  // Step 4: Init Firebase (SDK is guaranteed loaded by now)
+  loadFBConfigUI();
+
+  // Step 5: Load from Firestore in background
+  setTimeout(()=>load(),500);
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key==='k'){
+      e.preventDefault();
+      if(curPage!=='dash')go('dash');
+      setTimeout(()=>{const s=document.getElementById('global-search');if(s){s.focus();s.select()}},200);
+    }
+    if(e.key==='Escape'){
+      document.querySelectorAll('.mover.on').forEach(m=>m.classList.remove('on'));
+      const sr=document.getElementById('search-results');if(sr)sr.style.display='none';
+    }
+  });
+}
+
+// Wait for everything to be ready
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',startApp);
+}else{
+  startApp();
+}
+</script>
+</body>
+</html>
