@@ -672,6 +672,35 @@ tr td{transition:background .1s}
           </div>
         </div>
 
+        <!-- BULK IMPORT (CSV from Express Accounts / Excel / etc.) -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-hd">
+            <span class="card-title">Bulk Import from CSV</span>
+            <span style="font-size:12px;color:var(--muted)">Migrate clients, providers, or invoices from another system</span>
+          </div>
+          <div class="card-body">
+            <div style="background:var(--blue3);border-left:3px solid var(--blue);border-radius:0 10px 10px 0;padding:12px 15px;margin-bottom:18px;font-size:12.5px;color:var(--ink3);line-height:1.55">
+              <strong style="color:var(--blue);font-family:var(--head)">How it works:</strong>
+              Export a CSV from your old accounting program (Express Accounts: Reports → choose list → Export CSV).
+              AWAS auto-detects columns from common header names, lets you tweak the mapping, previews the first rows,
+              then imports. Duplicates (by name or invoice #) are skipped.
+            </div>
+            <div class="tabs" style="margin-bottom:16px">
+              <button class="tab on" onclick="swImport('clients',this)" id="imp-tab-clients">👤 Clients</button>
+              <button class="tab" onclick="swImport('providers',this)" id="imp-tab-providers">🏥 Providers</button>
+              <button class="tab" onclick="swImport('invoices',this)" id="imp-tab-invoices">📄 Client Invoices</button>
+            </div>
+            <div id="imp-help" style="font-size:12.5px;color:var(--muted);margin-bottom:12px;line-height:1.55"></div>
+            <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px">
+              <button class="btn btn-outline btn-sm" onclick="document.getElementById('imp-csv-file').click()">📁 Choose CSV file</button>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('imp-csv-text').focus()">…or paste below</button>
+              <input type="file" id="imp-csv-file" style="display:none" accept=".csv,.txt,.tsv" onchange="loadCSVFile(event)">
+            </div>
+            <textarea id="imp-csv-text" rows="6" placeholder="Or paste CSV text here — first row should be column headers…" style="font-family:var(--mono);font-size:12px;margin-bottom:12px" oninput="if(this.value.length>10)parseImportCSV(this.value)"></textarea>
+            <div id="imp-preview"></div>
+          </div>
+        </div>
+
         <!-- DATA -->
         <div class="card">
           <div class="card-hd"><span class="card-title">Data</span></div>
@@ -1334,6 +1363,7 @@ function renderPage(p){
   if(p==='reports')renderRep(repMode);
   if(p==='clients')renderDirC();
   if(p==='providers')renderDirP();
+  if(p==='settings'){const h=document.getElementById('imp-help');if(h&&!h.innerHTML)h.innerHTML=IMP_SCHEMAS[_impMode].help}
 }
 // ══════════════ CONFIRM DELETE ══════════════
 function checkOverdue(){
@@ -2874,6 +2904,332 @@ function loadSettingsUI(){
   };
   Object.entries(fields).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.value=val});
   if(S.logo)showLogoPreview(S.logo);
+}
+
+// ══════════════ BULK IMPORT (CSV) ══════════════
+// State
+let _impMode='clients';
+let _impParsed=null; // {headers:[], rows:[[]], mapping:{field:colIdx|null}}
+
+// Field schemas — what we import for each type, and common source header aliases
+const IMP_SCHEMAS={
+  clients:{
+    label:'Clients',
+    help:'Required: <strong>Name</strong>. Optional: Tax ID / VAT, Address, City, Country, Email, Phone, Contact person, Notes. Dedup is by name (case-insensitive).',
+    fields:[
+      {key:'name',label:'Name',required:true,aliases:['name','customer','customer name','company','client','client name','όνομα','επωνυμία']},
+      {key:'taxId',label:'Tax ID / VAT',aliases:['tax id','taxid','vat','vat no','vat number','id no','αφμ']},
+      {key:'address',label:'Address',aliases:['address','address1','street','διεύθυνση']},
+      {key:'city',label:'City',aliases:['city','town','πόλη']},
+      {key:'country',label:'Country',aliases:['country','χώρα']},
+      {key:'email',label:'Email',aliases:['email','e-mail','mail']},
+      {key:'phone',label:'Phone',aliases:['phone','tel','telephone','τηλέφωνο']},
+      {key:'person',label:'Contact person',aliases:['contact','contact person','attention','attn','υπόψη']},
+      {key:'notes',label:'Notes',aliases:['notes','note','remarks','comments','σημειώσεις']}
+    ]
+  },
+  providers:{
+    label:'Providers',
+    help:'Required: <strong>Name</strong>. Optional: Type (defaults to "Other"), Country, Email, Phone, Contact person, Notes. Dedup is by name.',
+    fields:[
+      {key:'name',label:'Name',required:true,aliases:['name','vendor','vendor name','supplier','supplier name','provider','provider name','company','όνομα','επωνυμία']},
+      {key:'type',label:'Type',aliases:['type','category','κατηγορία']},
+      {key:'country',label:'Country',aliases:['country','χώρα']},
+      {key:'email',label:'Email',aliases:['email','e-mail','mail']},
+      {key:'phone',label:'Phone',aliases:['phone','tel','telephone','τηλέφωνο']},
+      {key:'person',label:'Contact person',aliases:['contact','contact person','attention','attn']},
+      {key:'notes',label:'Notes',aliases:['notes','note','remarks','comments']}
+    ]
+  },
+  invoices:{
+    label:'Client Invoices',
+    help:'Required: <strong>Invoice #</strong>, <strong>Client name</strong>, <strong>Total</strong>. Optional: Date, Due date, Currency, Status, Date paid, External ref, Description. A minimal case is auto-created per invoice (status: <em>Closed</em>, one service line "Migrated"). Dedup is by invoice #.',
+    fields:[
+      {key:'num',label:'Invoice #',required:true,aliases:['invoice','invoice no','invoice number','inv','inv no','inv #','αρ. τιμολογίου','αριθμός']},
+      {key:'client',label:'Client name',required:true,aliases:['customer','customer name','client','client name','bill to','πελάτης']},
+      {key:'total',label:'Total',required:true,aliases:['total','amount','gross','grand total','σύνολο','ποσό']},
+      {key:'date',label:'Issue date',aliases:['date','invoice date','issued','issue date','ημερομηνία']},
+      {key:'due',label:'Due date',aliases:['due','due date','payment due','λήξη']},
+      {key:'cur',label:'Currency',aliases:['currency','cur','νόμισμα']},
+      {key:'status',label:'Status',aliases:['status','payment','paid','paid status','κατάσταση']},
+      {key:'paid',label:'Date paid',aliases:['date paid','paid date','payment date','paid on','πληρώθηκε']},
+      {key:'extref',label:'External ref',aliases:['reference','ref','ref no','po','po number','external ref','αναφορά']},
+      {key:'desc',label:'Description',aliases:['description','desc','details','line item','περιγραφή']}
+    ]
+  }
+};
+
+function swImport(mode,btn){
+  _impMode=mode;
+  document.querySelectorAll('#imp-tab-clients,#imp-tab-providers,#imp-tab-invoices').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('imp-help').innerHTML=IMP_SCHEMAS[mode].help;
+  const txt=document.getElementById('imp-csv-text').value;
+  if(txt.trim().length>10)parseImportCSV(txt);
+  else document.getElementById('imp-preview').innerHTML='';
+}
+
+function loadCSVFile(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const txt=ev.target.result;
+    document.getElementById('imp-csv-text').value=txt;
+    parseImportCSV(txt);
+  };
+  r.readAsText(f);
+}
+
+// Robust CSV parser — handles quoted fields, escaped quotes, multiple delimiters (,;\t)
+function parseCSV(text){
+  text=text.replace(/^﻿/,''); // strip BOM
+  // Auto-detect delimiter from first 2 KB
+  const sample=text.slice(0,2000);
+  const counts={',':sample.split(',').length-1,';':sample.split(';').length-1,'\t':sample.split('\t').length-1};
+  const delim=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
+  const rows=[];let row=[],field='',inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i],n=text[i+1];
+    if(inQ){
+      if(c==='"'&&n==='"'){field+='"';i++}
+      else if(c==='"')inQ=false;
+      else field+=c;
+    }else{
+      if(c==='"')inQ=true;
+      else if(c===delim){row.push(field);field=''}
+      else if(c==='\n'){row.push(field);rows.push(row);row=[];field=''}
+      else if(c==='\r'){/* skip */}
+      else field+=c;
+    }
+  }
+  if(field||row.length){row.push(field);rows.push(row)}
+  // Filter blank rows
+  return rows.filter(r=>r.some(c=>c.trim()));
+}
+
+function autoMapColumns(headers,fields){
+  const m={};
+  const norm=s=>s.toLowerCase().replace(/[^a-z0-9α-ω]+/gi,' ').trim();
+  const hNorm=headers.map(norm);
+  fields.forEach(f=>{
+    let best=-1;
+    for(const al of[f.key,...f.aliases]){
+      const an=norm(al);
+      const idx=hNorm.findIndex(h=>h===an);
+      if(idx!==-1){best=idx;break}
+    }
+    if(best===-1){
+      for(const al of[f.key,...f.aliases]){
+        const an=norm(al);
+        const idx=hNorm.findIndex(h=>h.includes(an)||an.includes(h));
+        if(idx!==-1){best=idx;break}
+      }
+    }
+    m[f.key]=best===-1?null:best;
+  });
+  return m;
+}
+
+function parseImportCSV(text){
+  const rows=parseCSV(text);
+  if(rows.length<2){
+    document.getElementById('imp-preview').innerHTML=`<div class="empty"><div class="empty-t">Need at least a header row + 1 data row.</div></div>`;
+    return;
+  }
+  const headers=rows[0].map(h=>h.trim());
+  const data=rows.slice(1);
+  const schema=IMP_SCHEMAS[_impMode];
+  const mapping=autoMapColumns(headers,schema.fields);
+  _impParsed={headers,rows:data,mapping};
+  renderImportPreview();
+}
+
+function renderImportPreview(){
+  if(!_impParsed)return;
+  const{headers,rows,mapping}=_impParsed;
+  const schema=IMP_SCHEMAS[_impMode];
+  const previewRows=rows.slice(0,5);
+  const colSelect=(fieldKey)=>{
+    const cur=mapping[fieldKey];
+    return`<select onchange="_impParsed.mapping['${fieldKey}']=this.value===''?null:parseInt(this.value);renderImportPreview()" style="font-size:12px;padding:5px 8px">
+      <option value="">— skip —</option>
+      ${headers.map((h,i)=>`<option value="${i}" ${cur===i?'selected':''}>${h||'(col '+(i+1)+')'}</option>`).join('')}
+    </select>`;
+  };
+  const missing=schema.fields.filter(f=>f.required&&mapping[f.key]===null);
+  document.getElementById('imp-preview').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:14px;padding:14px;background:var(--bg2);border-radius:10px;border:1px solid var(--border)">
+      ${schema.fields.map(f=>`<div class="fg">
+        <label>${f.label}${f.required?' <span style="color:var(--red)">*</span>':''}</label>
+        ${colSelect(f.key)}
+      </div>`).join('')}
+    </div>
+    ${missing.length?`<div style="background:var(--red3);border-left:3px solid var(--red);border-radius:0 10px 10px 0;padding:10px 13px;margin-bottom:12px;font-size:12.5px;color:var(--red)"><strong>Map these required fields before importing:</strong> ${missing.map(f=>f.label).join(', ')}</div>`:''}
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px">Preview (first ${previewRows.length} of ${rows.length} rows)</div>
+    <div class="tw" style="border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;margin-bottom:14px">
+      <table style="min-width:auto">
+        <thead><tr>${schema.fields.filter(f=>mapping[f.key]!==null).map(f=>`<th>${f.label}</th>`).join('')}</tr></thead>
+        <tbody>${previewRows.map(r=>`<tr>${schema.fields.filter(f=>mapping[f.key]!==null).map(f=>`<td style="font-size:12.5px">${(r[mapping[f.key]]||'').toString().slice(0,80)}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-size:12.5px;color:var(--muted)">Ready to import <strong>${rows.length}</strong> row${rows.length===1?'':'s'} as <strong>${schema.label}</strong>.</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('imp-csv-text').value='';document.getElementById('imp-csv-file').value='';_impParsed=null;document.getElementById('imp-preview').innerHTML=''">Cancel</button>
+        <button class="btn btn-dark" ${missing.length?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="commitImport()">⬇️ Import ${rows.length} ${schema.label}</button>
+      </div>
+    </div>`;
+}
+
+// Helpers
+function _impVal(row,mapping,key){const i=mapping[key];return i==null?'':(row[i]||'').toString().trim()}
+function _normName(s){return(s||'').toLowerCase().replace(/[^a-z0-9α-ω]+/gi,' ').trim()}
+function _parseAmount(s){if(!s)return 0;const cleaned=s.toString().replace(/[^\d,.\-]/g,'').replace(/\.(?=\d{3}(\D|$))/g,'').replace(',','.');const n=parseFloat(cleaned);return isNaN(n)?0:n}
+function _parseDate(s){
+  if(!s)return'';
+  s=s.toString().trim();
+  // Try ISO
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
+  // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+  const m=s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/);
+  if(m){
+    let[,d,mo,y]=m;if(y.length===2)y='20'+y;
+    return`${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  return s;
+}
+function _mapStatus(s,kind){
+  s=(s||'').toLowerCase().trim();
+  if(kind==='inv'){
+    if(/paid|πληρωμ/.test(s))return'Paid';
+    if(/overdue|καθυστερ/.test(s))return'Overdue';
+    if(/sent|issued|απεσταλ/.test(s))return'Sent';
+    return'Draft';
+  }
+  return s;
+}
+function _mapProviderType(s){
+  s=(s||'').toLowerCase();
+  if(/hospital|clinic|νοσοκομε/.test(s))return'Hospital/Clinic';
+  if(/air.*amb|αερο/.test(s))return'Air Ambulance';
+  if(/ground|ambulance|ασθενοφ/.test(s))return'Ground Ambulance';
+  if(/pharm|φαρμακ/.test(s))return'Pharmacy';
+  if(/hotel|ξενοδ/.test(s))return'Hotel';
+  if(/transport|flight/.test(s))return'Transport';
+  return'Other';
+}
+
+function commitImport(){
+  if(!_impParsed)return;
+  const{rows,mapping}=_impParsed;
+  const schema=IMP_SCHEMAS[_impMode];
+  const missing=schema.fields.filter(f=>f.required&&mapping[f.key]===null);
+  if(missing.length){toast('Map required fields first','err');return}
+  let added=0,skipped=0,errors=0;
+
+  if(_impMode==='clients'){
+    const existing=new Set(DB.clients.map(c=>_normName(c.name)));
+    rows.forEach(r=>{
+      try{
+        const name=_impVal(r,mapping,'name');if(!name){errors++;return}
+        if(existing.has(_normName(name))){skipped++;return}
+        DB.clients.push({
+          id:uid(),name,
+          taxId:_impVal(r,mapping,'taxId'),
+          address:_impVal(r,mapping,'address'),
+          city:_impVal(r,mapping,'city'),
+          country:_impVal(r,mapping,'country'),
+          email:_impVal(r,mapping,'email'),
+          phone:_impVal(r,mapping,'phone'),
+          person:_impVal(r,mapping,'person'),
+          notes:_impVal(r,mapping,'notes')
+        });
+        existing.add(_normName(name));added++;
+      }catch(e){errors++}
+    });
+  }
+  else if(_impMode==='providers'){
+    const existing=new Set(DB.providers.map(p=>_normName(p.name)));
+    rows.forEach(r=>{
+      try{
+        const name=_impVal(r,mapping,'name');if(!name){errors++;return}
+        if(existing.has(_normName(name))){skipped++;return}
+        DB.providers.push({
+          id:uid(),name,
+          type:_mapProviderType(_impVal(r,mapping,'type')),
+          country:_impVal(r,mapping,'country'),
+          email:_impVal(r,mapping,'email'),
+          phone:_impVal(r,mapping,'phone'),
+          person:_impVal(r,mapping,'person'),
+          notes:_impVal(r,mapping,'notes')
+        });
+        existing.add(_normName(name));added++;
+      }catch(e){errors++}
+    });
+  }
+  else if(_impMode==='invoices'){
+    // Build client lookup by normalized name (auto-create missing clients)
+    const clMap=new Map(DB.clients.map(c=>[_normName(c.name),c.id]));
+    const existingInv=new Set(DB.cInvoices.map(i=>(i.num||'').toLowerCase()));
+    rows.forEach(r=>{
+      try{
+        const num=_impVal(r,mapping,'num');
+        const clientName=_impVal(r,mapping,'client');
+        const totalStr=_impVal(r,mapping,'total');
+        if(!num||!clientName||!totalStr){errors++;return}
+        if(existingInv.has(num.toLowerCase())){skipped++;return}
+        const total=_parseAmount(totalStr);
+        // Auto-create client if missing
+        let clId=clMap.get(_normName(clientName));
+        if(!clId){
+          clId=uid();
+          DB.clients.push({id:clId,name:clientName,taxId:'',address:'',city:'',country:'',email:'',phone:'',person:'',notes:'Auto-created during CSV import'});
+          clMap.set(_normName(clientName),clId);
+        }
+        const date=_parseDate(_impVal(r,mapping,'date'))||today();
+        const due=_parseDate(_impVal(r,mapping,'due'))||date;
+        const cur=(_impVal(r,mapping,'cur')||DB.settings.currency||'EUR').toUpperCase().slice(0,3);
+        const status=_mapStatus(_impVal(r,mapping,'status'),'inv');
+        const paid=_parseDate(_impVal(r,mapping,'paid'))||(status==='Paid'?date:'');
+        const extref=_impVal(r,mapping,'extref');
+        const desc=_impVal(r,mapping,'desc')||'Migrated from previous system';
+        // Auto-create a minimal closed case to hold this invoice
+        const caseId=uid();
+        DB.cases.push({
+          id:caseId,
+          ref:`MIG-${num}`,
+          client:clId,
+          date,svcDate:date,
+          extref,patient:'',nat:'',origin:'',dest:'',
+          status:'Closed',
+          notes:'Imported from CSV — original system migration',
+          vat:0,
+          services:[{id:uid(),type:'Fees',desc,qty:1,rate:total,amount:total}]
+        });
+        DB.cInvoices.push({
+          id:uid(),
+          num,caseId,clId,date,due,total,cur,status,
+          paid,
+          notes:desc
+        });
+        existingInv.add(num.toLowerCase());added++;
+      }catch(e){errors++}
+    });
+  }
+
+  save();
+  // Reset import UI
+  document.getElementById('imp-csv-text').value='';
+  document.getElementById('imp-csv-file').value='';
+  _impParsed=null;
+  document.getElementById('imp-preview').innerHTML=`
+    <div style="background:var(--green3);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:14px 18px;font-size:13px;color:var(--ink3);line-height:1.6">
+      <div style="font-family:var(--head);font-size:15px;font-weight:600;color:var(--accent);letter-spacing:-.012em;margin-bottom:6px">✓ Import complete</div>
+      <div><strong>${added}</strong> added · <strong>${skipped}</strong> skipped (duplicates) ${errors?`· <strong style="color:var(--red)">${errors}</strong> errors`:''}</div>
+    </div>`;
+  // Re-render dependent views
+  renderDirC();renderDirP();renderCIList();renderPipeline();renderCaseTbl();renderDash();updBadges();
+  toast(`Imported ${added} ${IMP_SCHEMAS[_impMode].label.toLowerCase()}`,'ok');
 }
 
 // ══════════════ INIT ══════════════
