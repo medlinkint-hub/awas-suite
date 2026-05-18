@@ -1436,7 +1436,7 @@ function openDet(cid){
 
     <!-- STEP FLOW TABS -->
     <div class="step-flow">
-      <div class="step ${true?'done':''} active-step" id="sp-1" onclick="showStep(1)">
+      <div class="step ${c.services&&c.services.length>0?'done':''} active-step" id="sp-1" onclick="showStep(1)">
         <div class="step-num">✓</div>
         <div class="step-info"><div class="step-label">1. Services</div><div class="step-desc">${c.services.length} service(s)</div></div>
       </div>
@@ -1682,6 +1682,7 @@ function resetPI(caseId){
   ed.pi=null;tmpFile.pi=null;clearF('pi');
   document.getElementById('m-pi-t').textContent=caseId?'Add Provider Invoice — '+cRef(caseId):'New Provider Invoice';
   ['pi-pnum','pi-desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pi-fn').textContent='';
   document.getElementById('pi-num').value=nextExpNum();
   document.getElementById('pi-idate').value=today();document.getElementById('pi-amount').value='';document.getElementById('pi-status').value='Pending';document.getElementById('pi-paid').value='';document.getElementById('pi-cur').value='EUR';document.getElementById('pi-cat').value='Hospital/Medical';
   document.getElementById('pi-case').innerHTML='<option value="">— No case link —</option>'+DB.cases.map(c=>`<option value="${c.id}">${c.ref} — ${cliN(c.client)}</option>`).join('');
@@ -1691,6 +1692,7 @@ function resetPI(caseId){
   document.querySelectorAll('#m-pi .ai-hit').forEach(el=>el.classList.remove('ai-hit'));
 }
 function savePI(){
+  const pvId=document.getElementById('pi-prov').value;if(!pvId){toast('Select a provider','err');return}
   const amount=parseFloat(document.getElementById('pi-amount').value);if(!amount||isNaN(amount)){toast('Enter an amount','err');return}
   const id=ed.pi||uid();
   const obj={id,num:document.getElementById('pi-num').value,caseId:document.getElementById('pi-case').value,pvId:document.getElementById('pi-prov').value,cat:document.getElementById('pi-cat').value,pnum:document.getElementById('pi-pnum').value,idate:document.getElementById('pi-idate').value,amount,cur:document.getElementById('pi-cur').value,status:document.getElementById('pi-status').value,paid:document.getElementById('pi-paid').value,desc:document.getElementById('pi-desc').value};
@@ -2082,7 +2084,6 @@ function openPDFInvoice(ciId){
     <div style="margin-bottom:22px">
       <div style="font-weight:700;margin-bottom:5px">Bill To:</div>
       <div style="font-weight:700">${client.name||''}</div>
-      ${client.name?`<div>${client.name}</div>`:''}
       ${client.taxId?`<div>Id.No: ${client.taxId}</div>`:''}
       ${client.address?`<div>${client.address}</div>`:''}
       ${client.country?`<div>${client.country}${client.city?', '+client.city:''}</div>`:''}
