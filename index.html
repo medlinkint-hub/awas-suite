@@ -7,6 +7,8 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- html2pdf.js — used to generate the invoice PDF for Outlook email attachments -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -870,9 +872,9 @@ tr td{transition:background .1s}
       <button class="modal-close" onclick="closeM('m-pdf')">✕</button>
     </div>
   </div>
-  <div style="background:#fff7ed;border-bottom:1px solid #fed7aa;padding:10px 20px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:8px">
-    <span>💡</span>
-    <span><strong>Workflow:</strong> Click <strong>🖨️ Print / Save PDF</strong> → choose "Save as PDF" → then <strong>✉️ Send via Outlook</strong> → attach the saved PDF → send.</span>
+  <div style="background:var(--blue3);border-bottom:1px solid var(--blue2);padding:11px 22px;font-size:12.5px;color:var(--ink3);display:flex;align-items:center;gap:10px;line-height:1.55">
+    <span style="font-size:16px">💡</span>
+    <span><strong style="color:var(--blue);font-family:var(--head)">Send via Outlook</strong> auto-generates the PDF and saves an email draft (<code style="background:#fff;padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:11px">.eml</code>) with the invoice already attached — just double-click the downloaded file. Or use <strong>Print / Save PDF</strong> to keep the PDF only.</span>
   </div>
   <div class="modal-body" style="padding:0">
     <div id="pdf-invoice-body" style="padding:28px"></div>
@@ -2749,26 +2751,34 @@ function fmtInv(n,c='EUR'){
   }catch{return Number(n||0).toFixed(2)+(c==='EUR'?'€':c)}
 }
 
-// ══════════════ OUTLOOK SEND ══════════════
+// ══════════════ OUTLOOK SEND — generates .eml with embedded PDF attachment ══════════════
 let _currentInvId=null;
 function sendInvoiceOutlook(ciId){
-  // Open PDF preview first, then trigger Outlook
+  // Open PDF preview first (need it rendered for html2pdf), then trigger send
   openPDFInvoice(ciId);
-  setTimeout(()=>sendViaOutlook(),300);
+  setTimeout(()=>sendViaOutlook(),400);
 }
 function sendFromModal(){
   saveCI();
-  setTimeout(()=>{if(_currentInvId)sendViaOutlook()},400);
+  setTimeout(()=>{if(_currentInvId)sendViaOutlook()},500);
 }
-function sendViaOutlook(){
+// Fallback: plain mailto (no attachment) for users who can't or don't want to use .eml
+function sendViaMailtoOnly(){
   if(!_currentInvId)return;
-  const inv=DB.cInvoices.find(x=>x.id===_currentInvId);if(!inv)return;
+  const{subject,body,client}=_buildInvoiceEmail(_currentInvId);
+  window.location.href=`mailto:${client.email||''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  toast('Mail client opening — attach the PDF before sending','warn');
+}
+
+// Build the email subject + body for an invoice (shared between flows)
+function _buildInvoiceEmail(invId){
+  const inv=DB.cInvoices.find(x=>x.id===invId);
   const c=DB.cases.find(x=>x.id===inv.caseId)||{services:[],ref:'',extref:''};
   const client=DB.clients.find(x=>x.id===inv.clId)||{};
   const S=DB.settings;
   const svcs=c.services.map(s=>s.type).join(', ');
-  const subject=encodeURIComponent(`Invoice ${inv.num} — ${svcs}${c.extref?' — Ref: '+c.extref:''}`);
-  const body=encodeURIComponent(
+  const subject=`Invoice ${inv.num}${svcs?' — '+svcs:''}${c.extref?' — Ref: '+c.extref:''}`;
+  const body=
 `Dear ${client.person||client.name||'Sir/Madam'},
 
 Please find attached invoice ${inv.num} for services provided.
@@ -2792,11 +2802,125 @@ ${S.payinst?S.payinst+'\n\n':''}Thank you for your cooperation.
 Best regards,
 ${S.company||'AWAS LTD'}
 ${S.email||''}
-${S.website||''}
-`);
-  const mailto=`mailto:${client.email||''}?subject=${subject}&body=${body}`;
-  window.location.href=mailto;
-  toast('Outlook should open now — attach the PDF before sending','ai');
+${S.website||''}`;
+  return{inv,c,client,S,subject,body};
+}
+
+// RFC 2047 B-encoding for headers containing non-ASCII
+function _encodeMimeHeader(v){
+  v=String(v||'');
+  if(/[^\x00-\x7F]/.test(v)){
+    return'=?UTF-8?B?'+btoa(unescape(encodeURIComponent(v)))+'?=';
+  }
+  return v;
+}
+// Chunk base64 to 76 char lines per RFC 2045
+function _chunkB64(b64){return b64.replace(/(.{76})/g,'$1\r\n')}
+function _blobToB64(blob){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onloadend=()=>res(String(r.result).split(',')[1]);
+    r.onerror=()=>rej(new Error('Failed to read PDF blob'));
+    r.readAsDataURL(blob);
+  });
+}
+
+// Build RFC 822 .eml message with PDF attachment. X-Unsent:1 tells Outlook
+// to open it as a fresh, editable draft instead of as a received message.
+function _buildEML({to,from,subject,body,attachmentName,attachmentB64,replyTo}){
+  const boundary='----=_AWAS_'+Math.random().toString(36).slice(2,12)+Date.now().toString(36);
+  const bodyB64=_chunkB64(btoa(unescape(encodeURIComponent(body))));
+  const attB64=_chunkB64(attachmentB64);
+  const lines=[
+    `From: ${from||''}`,
+    `To: ${to||''}`,
+    replyTo?`Reply-To: ${replyTo}`:null,
+    `Subject: ${_encodeMimeHeader(subject)}`,
+    `Date: ${new Date().toUTCString()}`,
+    'MIME-Version: 1.0',
+    'X-Unsent: 1',
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/plain; charset="UTF-8"',
+    'Content-Transfer-Encoding: base64',
+    '',
+    bodyB64.trimEnd(),
+    '',
+    `--${boundary}`,
+    `Content-Type: application/pdf; name="${attachmentName}"`,
+    `Content-Disposition: attachment; filename="${attachmentName}"`,
+    'Content-Transfer-Encoding: base64',
+    '',
+    attB64.trimEnd(),
+    '',
+    `--${boundary}--`,
+    ''
+  ].filter(l=>l!==null);
+  return lines.join('\r\n');
+}
+
+// Generate a PDF blob from the rendered invoice preview using html2pdf.js
+async function _generateInvoicePDFBlob(filename){
+  if(typeof html2pdf==='undefined')throw new Error('PDF library not loaded — check your internet connection');
+  const src=document.getElementById('pdf-invoice-body');
+  if(!src||!src.innerHTML.trim())throw new Error('Invoice preview not rendered yet');
+  // Wait for web fonts before rasterizing
+  if(document.fonts&&document.fonts.ready){try{await document.fonts.ready}catch(e){}}
+  // Off-screen A4 container so html2pdf gets clean page dimensions
+  const wrap=document.createElement('div');
+  wrap.style.cssText='position:fixed;left:-10000px;top:0;width:210mm;background:#fff;padding:14mm 16mm;font-family:Inter,Helvetica,Arial,sans-serif';
+  wrap.innerHTML=src.innerHTML;
+  document.body.appendChild(wrap);
+  try{
+    const blob=await html2pdf().set({
+      margin:[0,0,0,0],
+      filename,
+      image:{type:'jpeg',quality:.98},
+      html2canvas:{scale:2,useCORS:true,letterRendering:true,backgroundColor:'#ffffff',logging:false},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
+      pagebreak:{mode:['avoid-all','css','legacy']}
+    }).from(wrap).outputPdf('blob');
+    return blob;
+  }finally{
+    document.body.removeChild(wrap);
+  }
+}
+
+// Trigger a file download from a Blob
+function _downloadBlob(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),6000);
+}
+
+// Main: generate .eml with PDF attached, hand it to the user
+async function sendViaOutlook(){
+  if(!_currentInvId){toast('No invoice selected','err');return}
+  toast('📎 Building email with PDF attachment…','ai');
+  try{
+    const{inv,client,S,subject,body}=_buildInvoiceEmail(_currentInvId);
+    const pdfName=`Invoice-${inv.num}.pdf`;
+    const blob=await _generateInvoicePDFBlob(pdfName);
+    const attB64=await _blobToB64(blob);
+    const eml=_buildEML({
+      to:client.email||'',
+      from:S.email2||S.email||'',
+      replyTo:S.email||'',
+      subject,
+      body,
+      attachmentName:pdfName,
+      attachmentB64:attB64
+    });
+    const emlBlob=new Blob([eml],{type:'message/rfc822'});
+    _downloadBlob(emlBlob,`Invoice-${inv.num}.eml`);
+    toast('✓ Email draft saved — open the .eml file to send via Outlook','ok');
+  }catch(e){
+    console.error(e);
+    toast('Couldn\'t build email: '+(e.message||'unknown error')+' — falling back to mailto','err');
+    setTimeout(sendViaMailtoOnly,800);
+  }
 }
 
 function printInvoice(){
