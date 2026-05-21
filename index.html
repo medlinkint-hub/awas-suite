@@ -397,6 +397,158 @@ tr td{transition:background .1s}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001s!important;transition-duration:.001s!important}
 }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE ENHANCEMENTS — comprehensive responsive polish
+   Breakpoints: 900px (tablet), 700px (mobile), 480px (phones)
+   ════════════════════════════════════════════════════════════ */
+
+/* Tablet & smaller — sidebar drawer + sensible stacking */
+@media(max-width:900px){
+  :root{--sidebar:280px}
+  #sb{box-shadow:8px 0 32px rgba(11,36,71,.25)}
+  #topbar{height:60px;padding:0 16px;gap:10px}
+  #content{padding:18px 16px}
+  .tb-title{font-size:17px}
+  .tb-sub{font-size:11.5px}
+  #global-search{padding:12px 14px 12px 42px!important;font-size:14px!important;border-radius:12px!important}
+  #global-search + span{left:14px!important}
+  /* Hide ⌘K hint when there's no keyboard */
+  #global-search ~ span:has(kbd){display:none!important}
+  .card-hd{padding:14px 16px}
+  .card-body{padding:16px}
+  .modal-body{padding:18px}
+  .modal-hd{padding:18px 18px 14px}
+  .modal-title{font-size:17px}
+  .form-actions{flex-direction:column-reverse;align-items:stretch}
+  .form-actions .btn{width:100%;justify-content:center}
+  .dir-grid{grid-template-columns:1fr}
+  .fbar{gap:8px}
+  .fbar input{max-width:none;flex:1 1 100%}
+  .fbar select{flex:1 1 auto}
+  .shortcut-grid{grid-template-columns:1fr;gap:0}
+  /* Tabs — allow horizontal scroll if too many */
+  .tabs{display:flex;overflow-x:auto;max-width:100%;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex-shrink:0}
+  /* Step flow — horizontal scroll instead of cramped flex */
+  .step-flow{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .step-flow::-webkit-scrollbar{display:none}
+  .step{flex:0 0 auto;padding:14px 16px;min-width:140px}
+  .step-panel{padding:18px 16px}
+  /* Invoice rows stack on mobile */
+  .inv-doc-hd{flex-direction:column;align-items:flex-start;gap:6px;padding:14px 16px}
+  .inv-line{padding:11px 16px;flex-wrap:wrap}
+  .inv-totals{padding:12px 16px}
+  /* Provider invoice rows: stack right column under main */
+  .pi-row{flex-wrap:wrap;padding:12px 14px}
+  .pi-row-right{min-width:0;width:100%;text-align:left;padding-top:8px;border-top:1px dashed var(--bg2);margin-top:4px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .pi-row-btns{flex-direction:row;flex-wrap:wrap}
+  /* Case-detail header: smaller padding & font */
+  .cd-hdr{padding:22px 18px}
+  .cd-name{font-size:22px}
+  /* Bulk-bar */
+  .bulk-bar{flex-wrap:wrap}
+}
+
+/* Mobile — phones */
+@media(max-width:700px){
+  body{font-size:13.5px}
+  #topbar{height:56px;padding:0 12px;gap:8px}
+  .tb-acts{gap:6px}
+  /* Hide sync chip on small phones */
+  #sync-status{display:none}
+  /* Topbar secondary/main action buttons shrink */
+  .tb-acts .btn-sm{padding:6px 10px;font-size:12px}
+  .tb-title{font-size:16px}
+  .tb-sub{display:none}
+  #content{padding:14px 12px}
+  /* KPI: tighter padding */
+  .kpi{padding:16px 16px 14px}
+  .kpi-val{font-size:24px}
+  .kpi-lbl{margin-bottom:10px}
+  /* Section cards on dash should stack */
+  #d2a,#d2b{grid-template-columns:1fr!important}
+  /* Tables — make them readable */
+  table{min-width:0;font-size:12.5px}
+  th,td{padding:10px 10px}
+  th:first-child,td:first-child{padding-left:14px}
+  th:last-child,td:last-child{padding-right:14px}
+  th{font-size:10px;letter-spacing:.06em}
+  /* Form inputs — bigger touch targets, prevent iOS zoom */
+  input,select,textarea{font-size:16px;padding:11px 12px}
+  /* Buttons — meet 44px touch target */
+  .btn{min-height:40px;padding:10px 16px}
+  .btn-sm{min-height:34px;padding:7px 12px}
+  .btn-xs{min-height:28px}
+  /* Modal — near full screen on phones */
+  .mover{padding:0;align-items:flex-end}
+  .modal{max-height:96vh;border-radius:18px 18px 0 0;animation:mdInBottom .28s cubic-bezier(.34,1.4,.5,1)}
+  @keyframes mdInBottom{from{transform:translateY(28px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal-hd{padding:16px 16px 12px;border-radius:18px 18px 0 0}
+  .modal-body{padding:16px}
+  /* Toast — slide from top, full width */
+  #tc{top:64px;right:8px;left:8px}
+  .toast{min-width:0;width:100%;padding:11px 14px}
+  /* Pipeline columns are tighter */
+  .pcol{flex:0 0 220px;min-width:220px}
+  /* Step indicator labels hide on smallest */
+  .step-num{width:26px;height:26px;font-size:11px}
+  .step-desc{display:none}
+  /* Step flow alternate: pills instead of bar */
+  .step{padding:12px 14px;min-width:120px;gap:10px}
+  .step-label{font-size:12px}
+  /* Pipeline & lists with cards */
+  .pcard{padding:11px}
+  .pc-fin{grid-template-columns:1fr 1fr;gap:6px}
+  .pc-fin .pc-fi-cell:nth-child(3){grid-column:1 / -1}
+  /* Cases page header buttons wrap */
+  #page-cases > div:first-child{flex-direction:column;align-items:stretch}
+  #page-cases > div:first-child .btn{justify-content:center}
+  /* Service line items — tighter */
+  .svc-line-item{padding:14px 12px}
+  /* Search input on dashboard */
+  #global-search{padding:11px 12px 11px 38px!important;font-size:14px!important}
+}
+
+/* Phones — smallest */
+@media(max-width:480px){
+  #topbar{padding:0 10px;gap:6px}
+  .tb-title{font-size:15px}
+  .tb-acts .btn{font-size:11.5px;padding:6px 9px}
+  #content{padding:12px 10px}
+  /* Hide search keyboard hint completely already done above */
+  /* Card titles smaller */
+  .card-title{font-size:15px}
+  .card-hd{padding:12px 14px}
+  .card-body{padding:14px}
+  /* Tighter modal body */
+  .modal-body{padding:14px}
+  /* KPI single-column already set */
+  .kpi-val{font-size:22px}
+  /* Pipeline cols even tighter on tiny screens */
+  .pcol{flex:0 0 200px;min-width:200px}
+  /* Tags wrap nicer */
+  .cd-chips{gap:5px}
+  .tag{font-size:10.5px;padding:3px 8px}
+  /* Page header buttons full-width */
+  .fbar{flex-direction:column;align-items:stretch}
+  .fbar input,.fbar select{width:100%;max-width:none}
+  /* Tabs — smaller */
+  .tab{padding:7px 13px;font-size:12px}
+  /* Financial strip — 2 col grid on tiny */
+  .fin-strip{grid-template-columns:1fr 1fr}
+  .fin-cell{padding:14px 12px}
+  .fin-cell:nth-child(2n){border-right:none}
+  .fin-cell:nth-child(n+3){border-top:1px solid var(--border)}
+  .fin-val{font-size:16px}
+  /* Toast tighter */
+  .toast{font-size:12.5px;padding:10px 12px}
+  /* Buttons gap inside tb-acts */
+  .tb-acts > button:first-child{display:none}  /* hide keyboard shortcut button on tiny */
+  /* Pi-row right side */
+  .pi-row-amt{font-size:14px}
+}
 </style>
 </head>
 <body>
